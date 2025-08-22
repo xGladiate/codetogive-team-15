@@ -45,17 +45,17 @@ export function LoginForm({
       const { data: profile, error: profileError } = await supabase
             .from("profiles")
             .select("role")
-            .eq("id", user.id) // profiles.id is foreign key to auth.users.id
+            .eq("id", user.id)
             .single();
 
           if (profileError) throw profileError;
           if (!profile) throw new Error("Profile not found");
 
-          // Step 3: Redirect based on role
+          // Redirect based on user role
           if (profile.role === "donor") {
             router.push("/donor");
-          } else if (profile.role === "staff") {
-            router.push("/staff");
+          } else if (profile.role === "admin") {
+            router.push("/admin");
           } else {
             throw new Error("Unknown role");
           }
