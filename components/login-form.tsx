@@ -33,13 +33,35 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+
+    const user = data.user;
+    if (!user) throw new Error("No user found");
+
+      const { data: profile, error: profileError } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id) // profiles.id is foreign key to auth.users.id
+            .single();
+
+          if (profileError) throw profileError;
+          if (!profile) throw new Error("Profile not found");
+
+          // Step 3: Redirect based on role
+          if (profile.role === "donor") {
+            router.push("/donor");
+          } else if (profile.role === "staff") {
+            router.push("/staff");
+          } else {
+            throw new Error("Unknown role");
+          }
+
       // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
+      router.push("/donor");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
