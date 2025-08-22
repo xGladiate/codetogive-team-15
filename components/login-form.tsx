@@ -59,9 +59,6 @@ export function LoginForm({
           } else {
             throw new Error("Unknown role");
           }
-
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/donor");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
