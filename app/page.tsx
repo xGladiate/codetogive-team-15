@@ -14,7 +14,6 @@ export default async function Home() {
   const user = authUser?.claims;
 
   if (user) {
-    console.log("User is logged in:", user);
       // Redirect based on user role
       if (user.user_metadata.role === "donor") {
         redirect("/donor");
