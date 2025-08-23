@@ -41,10 +41,10 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     // Required fields
-    const receiptId: string | undefined = body.receiptId;
+    const id: string | undefined = body.id;
     const email: string | undefined = body.email;
-    const amountCents: number | undefined = body.amountCents;
-    const dateIso: string | undefined = body.dateIso;
+    const amount: number | undefined = body.amount;
+    const created_at: string | undefined = body.created_at;
 
     // Optional fields
     const currency: string = body.currency ?? "HKD";
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     const signer1Name = "Vivian Chung Ming Wai";
     const signer2Name = "Tse Hiu Fung Quincy";
 
-    if (!receiptId || !email || amountCents === undefined || !dateIso) {
+    if (!id || !email || amount === undefined || !created_at) {
       return NextResponse.json({ error: "Missing required fields. Required: receiptId, email, amountCents, dateIso" }, { status: 400 });
     }
 
@@ -69,8 +69,7 @@ export async function POST(req: NextRequest) {
     const lineHeight = 16;
     const leftMargin = 50;
 
-    const amount = (amountCents / 100).toFixed(2);
-    const dateStr = new Date(dateIso).toLocaleDateString();
+    const dateStr = new Date(created_at).toLocaleDateString();
 
     // Header block
     let y = 800;
@@ -91,7 +90,7 @@ export async function POST(req: NextRequest) {
     // Details two columns
     y = 690;
     page.drawText(`Date: ${dateStr}`, { x: leftMargin, y, size: fontSize, font: timesFont });
-    page.drawText(`Receipt number: ${receiptId}`, { x: 350, y, size: fontSize, font: timesFont });
+    page.drawText(`Receipt number: ${id}`, { x: 350, y, size: fontSize, font: timesFont });
     y -= lineHeight;
     page.drawText(`Donation received from: ${email}`, { x: leftMargin, y, size: fontSize, font: timesFont });
     y -= lineHeight;
@@ -162,17 +161,17 @@ export async function POST(req: NextRequest) {
       htmlParts.push(`<p><strong>Remarks:</strong> ${remarks}</p>`);
     }
     htmlParts.push(`<p>${englishDisclaimer}</p>`);
-    htmlParts.push(`<p>Receipt ID: ${receiptId}</p>`);
+    htmlParts.push(`<p>Receipt ID: ${id}</p>`);
 
     const request = mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
         {
           From: { Email: "klown.kat01@gmail.com", Name: "Race for Education Accessibilities" },
           To: [{ Email: email }],
-          Subject: `Your Donation Receipt: ${receiptId}`,
+          Subject: `Your Donation Receipt: ${id}`,
           HTMLPart: htmlParts.join("\n"),
-          TextPart: `Thank you for your donation! Receipt: ${receiptId}\n\n${englishDisclaimer}`,
-          Attachments: [{ ContentType: "application/pdf", Filename: `Receipt-${receiptId}.pdf`, Base64Content: base64PDF }],
+          TextPart: `Thank you for your donation! Receipt: ${id}\n\n${englishDisclaimer}`,
+          Attachments: [{ ContentType: "application/pdf", Filename: `Receipt-${id}.pdf`, Base64Content: base64PDF }],
         },
       ],
     });
