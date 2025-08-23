@@ -3,9 +3,26 @@ import Header from "@/components/landing_page/Header";
 import DataVisualization from "@/components/landing_page/DataVisualization";
 import DonationsSection from "@/components/landing_page/DonationsSection";
 import ProgressBar from "@/components/landing_page/ProgressBar";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
   const supabase = await createClient();
+
+  // You can also use getUser() which will be slower.
+  const { data: authUser } = await supabase.auth.getClaims();
+
+  const user = authUser?.claims;
+
+  if (user) {
+    console.log("User is logged in:", user);
+      // Redirect based on user role
+      if (user.user_metadata.role === "donor") {
+        redirect("/donor");
+      } else if (user.user_metadata.role === "admin") {
+        redirect("/admin");
+      }
+    
+  }
 
   // Fetch packages from Supabase
   const { data: packages } = await supabase
