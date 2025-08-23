@@ -33,13 +33,32 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
+
+    const user = data.user;
+    if (!user) throw new Error("No user found");
+
+    const { data: userRole, error: userError } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+
+    if (userError) throw userError;
+    if (!userRole) throw new Error("User not found");
+
+    // Redirect based on user role
+    if (userRole.role === "donor") {
+      router.push("/donor");
+    } else if (userRole.role === "admin") {
+      router.push("/admin");
+    } else {
+      throw new Error("Unknown role");
+    }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
