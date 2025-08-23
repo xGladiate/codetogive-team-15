@@ -2,7 +2,6 @@ import { EnvVarWarning } from "@/components/env-var-warning";
 import { AuthButton } from "@/components/auth-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { hasEnvVars } from "@/lib/utils";
-import Link from "next/link";
 import NavigationText from "@/components/navigator-text";
 
 export default function ProtectedLayout({
@@ -14,7 +13,7 @@ export default function ProtectedLayout({
     <main className="min-h-screen flex flex-col items-center">
         <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
           <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-              <NavigationText label="Donor Dashboard" path="/donor-dashboard" />
+              <NavigationText label="Donor Profile" path="/donor" />
               {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
           </div>
         </nav>
