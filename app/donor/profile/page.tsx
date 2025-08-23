@@ -7,8 +7,17 @@ import {BadgesCarousel } from "@/components/badges-carousel";
 import DonationHistory from "@/components/donation-history";
 import gradientImg from "@/public/assets/gradient.png";
 
-export default async function DonorProfilePage() {
+export const dynamic = "force-dynamic";
+
+type SP = { page?: string; pageSize?: string };
+
+export default async function DonorProfilePage({
+  searchParams,
+}: {
+  searchParams: Promise<SP>; 
+}) {
   const supabase = await createClient();
+  const sp = await searchParams;
 
   const {
     data: { user },
@@ -40,7 +49,7 @@ export default async function DonorProfilePage() {
   return (
     <div className="relative w-full">
       {/* Card */}
-      <div className="relative bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mx-auto max-w-6xl overflow-hidden">
+      <div className="relative bg-white rounded-xl shadow-lg p-4 sm:p-6 lg:p-8 mx-auto overflow-hidden">
         {/* top gradient bar */}
         <div className="pointer-events-none absolute left-0 right-0 top-0 h-2">
           <Image src={gradientImg} alt="" fill className="object-cover" priority />
@@ -66,7 +75,7 @@ export default async function DonorProfilePage() {
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-gray-600 text-sm sm:text-base">
                   <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
                   <span className="text-yellow-600 font-semibold">{totalFundedDisplay}</span>
-                  <span className="text-gray-500">Funded</span>
+                  <span className="text-gray-500">Donated</span>
                 </div>
               </div>
             </div>
@@ -78,13 +87,13 @@ export default async function DonorProfilePage() {
           </div>
 
           {/* Badges */}
-          <section className="py-6">
+          <section className="py-2">
             <BadgesCarousel />
           </section>
 
           {/* Donation History */}
-          <section className="py-6">
-            <DonationHistory />
+          <section className="py-2">
+            <DonationHistory page={sp.page} pageSize={sp.pageSize}  />
           </section>
         </div>
       </div>

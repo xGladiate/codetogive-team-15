@@ -13,9 +13,10 @@ export interface Donation {
   amount: number;
   donor_id: number;
   school_id: number;
-  package_id: string;
+  package_id: number;
   remarks: string | null;
   type: "one_off" | "recurring";
+  payment_method: "Stripe" | "Bank"
   created_at: string;
 }
 
