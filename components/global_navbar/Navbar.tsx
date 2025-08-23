@@ -94,7 +94,7 @@ export default function Navbar() {
             <>
               <NavigationText label="Admin Page" path="/admin" />
               <NavigationText label="Outreach Tool" path="/outreach" />
-              <NavigationText label="Package Options" path="/package" />
+              <NavigationText label="Package Management" path="/package" />
             </>
           ) : (
             <>
