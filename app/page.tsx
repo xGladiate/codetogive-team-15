@@ -3,9 +3,39 @@ import Header from "@/components/landing_page/Header";
 import DataVisualization from "@/components/landing_page/DataVisualization";
 import DonationsSection from "@/components/landing_page/DonationsSection";
 import ProgressBar from "@/components/landing_page/ProgressBar";
+import { redirect } from "next/navigation";
 
 export default async function Home() {
   const supabase = await createClient();
+
+  // You can also use getUser() which will be slower.
+  const { data: authUser } = await supabase.auth.getClaims();
+
+  const user = authUser?.claims;
+
+  console.log("Auth User:", user);
+
+  if (user) {
+    // Only query roles if the user exists
+    const { data: userRole, error } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.sub)
+      .single();
+
+    if (error || !userRole) {
+      console.error("User not found in users table", error);
+      // Fall back to showing landing page instead of throwing
+    } else {
+      // Redirect based on user role
+      if (userRole.role === "donor") {
+        redirect("/donor");
+      } else if (userRole.role === "admin") {
+        redirect("/admin");
+      }
+    }
+  }
+
 
   // Fetch packages from Supabase
   const { data: packages } = await supabase
