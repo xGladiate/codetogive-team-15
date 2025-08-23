@@ -1,60 +1,34 @@
-"use client"
+"use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import type { Badge } from "@/types/database";
 
-type Badge = {
-  id: string;
-  name: string;
-  description: string | null;
-  icon_url: string;
-  achieved: boolean;
-  achievedDate?: string | null;
-};
+type Props = { initialBadges: Badge[] };
 
-export function BadgesCarousel() {
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState(true);
+export function BadgesCarousel({ initialBadges }: Props) {
+  const badges = initialBadges ?? [];
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
-  const visibleBadges = 6;
+  const visibleCount = 6;
 
-  useEffect(() => {
-    let cancel = false;
-    (async () => {
-      try {
-        setLoading(true);
-        const res = await fetch("/api/donor/badges", { cache: "no-store" });
-        if (!res.ok) throw new Error(`Badges fetch failed: ${res.status}`);
-        const data = (await res.json()) as Badge[];
-        if (!cancel) setBadges(data);
-      } catch (e) {
-        console.error(e);
-        if (!cancel) setBadges([]);
-      } finally {
-        if (!cancel) setLoading(false);
-      }
-    })();
-    return () => { cancel = true; };
-  }, []);
-
-  const nextSlide = () => setCurrentIndex((p) => (p + 1) % Math.max(badges.length, 1));
-  const prevSlide = () => setCurrentIndex((p) => (p - 1 + Math.max(badges.length, 1)) % Math.max(badges.length, 1));
+  const nextSlide = () =>
+    setCurrentIndex((p) => (p + 1) % Math.max(badges.length, 1));
+  const prevSlide = () =>
+    setCurrentIndex((p) => (p - 1 + Math.max(badges.length, 1)) % Math.max(badges.length, 1));
 
   const visible = useMemo(() => {
-    if (loading || !badges.length) return [] as Badge[];
+    if (!badges.length) return [] as Badge[];
     const out: Badge[] = [];
-    for (let i = 0; i < visibleBadges; i++) {
+    for (let i = 0; i < Math.min(visibleCount, badges.length); i++) {
       const idx = (currentIndex + i) % badges.length;
       out.push(badges[idx]);
     }
     return out;
-  }, [badges, currentIndex, loading]);
-
+  }, [badges, currentIndex]);
 
   return (
     <div className="w-full">
@@ -68,26 +42,28 @@ export function BadgesCarousel() {
 
       <div className="relative flex items-center gap-4">
         {/* Left Arrow */}
-        <Button variant="outline" size="icon" onClick={prevSlide} className="shrink-0 rounded-full w-10 h-10 border-2 bg-transparent">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={prevSlide}
+          disabled={badges.length <= 1}
+          className="shrink-0 rounded-full w-10 h-10 border-2 bg-transparent disabled:opacity-50"
+        >
           <ChevronLeft className="w-4 h-4" />
         </Button>
 
         {/* Badge Container */}
         <div className="flex-1 overflow-hidden">
           <div className="flex gap-6 justify-center py-4">
-            {loading ? (
-              Array.from({ length: visibleBadges }).map((_, i) => (
-                <div key={`skeleton-${i}`} className="flex flex-col items-center gap-3 p-2">
-                  <div className="w-20 h-20 rounded-full bg-muted animate-pulse" />
-                  <div className="h-9 w-20 rounded bg-muted/70 animate-pulse" />
-                </div>
-              ))
+            {badges.length === 0 ? (
+              <div className="text-sm text-muted-foreground py-8">
+                No badges yet.
+              </div>
             ) : (
               visible.map((badge, index) => (
                 <Dialog key={`${badge.id}-${currentIndex}-${index}`}>
                   <DialogTrigger asChild>
                     <button
-                      onClick={() => setSelectedBadge(badge)}
                       className={cn(
                         "bg-transparent active:bg-transparent focus:bg-transparent appearance-none shadow-none",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -95,19 +71,33 @@ export function BadgesCarousel() {
                         "group cursor-pointer"
                       )}
                     >
-                      {/* Circle image badge with green outline when achieved */}
-                      <div className={cn("relative w-20 h-20 rounded-full overflow-hidden transition", badge.achieved ? "ring-4 ring-green-600" : "")}>
+                      <div
+                        className={cn(
+                          "relative w-20 h-20 rounded-full overflow-hidden transition",
+                          badge.achieved ? "ring-4 ring-green-600" : ""
+                        )}
+                      >
                         <Image
                           src={badge.icon_url}
                           alt={badge.name}
                           fill
                           sizes="80px"
-                          className={cn("object-cover rounded-full", !badge.achieved && "grayscale")}
+                          className={cn(
+                            "object-cover rounded-full",
+                            !badge.achieved && "grayscale"
+                          )}
                         />
-                        {!badge.achieved && <div className="absolute inset-0 rounded-full bg-black/35" />}
+                        {!badge.achieved && (
+                          <div className="absolute inset-0 rounded-full bg-black/35" />
+                        )}
                       </div>
 
-                      <span className={cn("text-sm font-medium text-center max-w-20 leading-tight", badge.achieved ? "text-foreground" : "text-muted-foreground")}>
+                      <span
+                        className={cn(
+                          "text-sm font-medium text-center max-w-20 leading-tight",
+                          badge.achieved ? "text-foreground" : "text-muted-foreground"
+                        )}
+                      >
                         {badge.name}
                       </span>
                     </button>
@@ -120,24 +110,41 @@ export function BadgesCarousel() {
                   >
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-3">
-                        <div className={cn("relative w-20 h-20 rounded-full overflow-hidden", badge.achieved ? "ring-4 ring-green-600" : "")}>
+                        <div
+                          className={cn(
+                            "relative w-20 h-20 rounded-full overflow-hidden",
+                            badge.achieved ? "ring-4 ring-green-600" : ""
+                          )}
+                        >
                           <Image
                             src={badge.icon_url}
                             alt={badge.name}
                             fill
                             sizes="80px"
-                            className={cn("object-cover rounded-full", !badge.achieved && "grayscale")}
+                            className={cn(
+                              "object-cover rounded-full",
+                              !badge.achieved && "grayscale"
+                            )}
                           />
-                          {!badge.achieved && <div className="absolute inset-0 rounded-full bg-black/35" />}
+                          {!badge.achieved && (
+                            <div className="absolute inset-0 rounded-full bg-black/35" />
+                          )}
                         </div>
                         {badge.name}
                       </DialogTitle>
                     </DialogHeader>
 
                     <div className="space-y-4">
-                      {badge.description && <p className="text-muted-foreground">{badge.description}</p>}
+                      {badge.description && (
+                        <p className="text-muted-foreground">{badge.description}</p>
+                      )}
                       <div className="flex items-center gap-2">
-                        <div className={cn("w-3 h-3 rounded-full", badge.achieved ? "bg-green-500" : "bg-gray-400")} />
+                        <div
+                          className={cn(
+                            "w-3 h-3 rounded-full",
+                            badge.achieved ? "bg-green-500" : "bg-gray-400"
+                          )}
+                        />
                         <span className="text-sm font-medium">
                           {badge.achieved ? "Achieved" : "Not achieved yet"}
                         </span>
@@ -145,7 +152,11 @@ export function BadgesCarousel() {
                       {badge.achieved && badge.achievedDate && (
                         <p className="text-sm text-muted-foreground">
                           Earned on{" "}
-                          {new Date(badge.achievedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                          {new Date(badge.achievedDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
                         </p>
                       )}
                     </div>
@@ -157,7 +168,13 @@ export function BadgesCarousel() {
         </div>
 
         {/* Right Arrow */}
-        <Button variant="outline" size="icon" onClick={nextSlide} className="shrink-0 rounded-full w-10 h-10 border-2 bg-transparent">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={nextSlide}
+          disabled={badges.length <= 1}
+          className="shrink-0 rounded-full w-10 h-10 border-2 bg-transparent disabled:opacity-50"
+        >
           <ChevronRight className="w-4 h-4" />
         </Button>
       </div>

@@ -27,3 +27,12 @@ export interface School {
   total_funding: number;
   created_at: string;
 }
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string | null;
+  icon_url: string;
+  achieved: boolean;
+  achievedDate?: string | null;
+};
