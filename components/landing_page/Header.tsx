@@ -18,12 +18,7 @@ export default async function Header() {
   let userRole = null;
 
   if (user) {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-    userRole = data?.role;
+    userRole = user.user_metadata?.role;
   }
 
   return (

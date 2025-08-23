@@ -6,9 +6,9 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 interface Props {
-  searchParams: {
+  searchParams: Promise<{
     packageId?: string;
-  };
+  }>;
 }
 
 export default async function DonatePage({ searchParams }: Props) {
