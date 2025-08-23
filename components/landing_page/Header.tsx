@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/navigation-menu";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import DonateButton from "./DonateButton";
 import { AuthButton } from "@/components/auth-button";
 
 export default async function Header() {
@@ -53,11 +52,19 @@ export default async function Header() {
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               )}
+
+              <NavigationMenuItem>
+                <NavigationMenuLink
+                  href="#donations-section"
+                  className="text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Donate
+                </NavigationMenuLink>
+              </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
 
           <div className="flex gap-3">
-            <DonateButton />
             <AuthButton />
           </div>
         </div>
