@@ -35,6 +35,9 @@ export default function DonateForm({
 }: Props) {
   const [currentPackage, setCurrentPackage] = useState(selectedPackage);
   const [frequency, setFrequency] = useState("one-time");
+
+  const [paymentMethod, setPaymentMethod] = useState<"Stripe" | "Bank">("Bank");
+
   const [customAmount, setCustomAmount] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("");
   const [remarks, setRemarks] = useState("");
@@ -222,7 +225,9 @@ export default function DonateForm({
           package_id: currentPackage.id,
           remarks: remarks,
           type: frequency === "one-time" ? "one_off" : "recurring",
+          payment_method: paymentMethod,
           created_at: new Date().toISOString(),
+          email: user.email
         })
         .select()
         .single();
@@ -243,6 +248,7 @@ export default function DonateForm({
       }
 
       // Redirect to success page or donor dashboard
+      toast.success("Payment recorded successfully.");
       router.push("/donor?success=true");
     } catch (error) {
       console.error("Error processing donation:", error);
@@ -440,6 +446,23 @@ export default function DonateForm({
             <CardTitle>Payment Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+          <div>
+              <Label className="text-base font-medium">Payment Method</Label>
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={(v: "Bank" | "Stripe") => setPaymentMethod(v)}
+                className="mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Bank" id="pay-bank" />
+                  <Label htmlFor="pay-bank">Bank Transfer</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="Stripe" id="pay-card" />
+                  <Label htmlFor="pay-card">Stripe</Label>
+                </div>
+              </RadioGroup>
+            </div>
             <div>
               <Label htmlFor="email">Email*</Label>
               <Input
