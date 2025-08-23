@@ -13,8 +13,6 @@ export default async function Home() {
 
   const user = authUser?.claims;
 
-  console.log("Auth User:", user);
-
   if (user) {
     // Only query roles if the user exists
     const { data: userRole, error } = await supabase
@@ -24,8 +22,7 @@ export default async function Home() {
       .single();
 
     if (error || !userRole) {
-      console.error("User not found in users table", error);
-      // Fall back to showing landing page instead of throwing
+      // Fall back to showing landing page instead of throwing an error
     } else {
       // Redirect based on user role
       if (userRole.role === "donor") {
@@ -35,7 +32,6 @@ export default async function Home() {
       }
     }
   }
-
 
   // Fetch packages from Supabase
   const { data: packages } = await supabase
