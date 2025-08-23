@@ -98,7 +98,8 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              {user && <NavigationText label="Donor Dashboard" path="/donor" />}
+              {user && <NavigationText label="Donor Profile" path="/donor" />}
+              <NavigationText label="Donor Dashboard" path="/donor-dashboard" />
               <NavigationText label="Donate" path="/donate" />
             </>
           )}
