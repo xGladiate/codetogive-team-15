@@ -74,7 +74,7 @@ export function BadgesCarousel() {
 
         {/* Badge Container */}
         <div className="flex-1 overflow-hidden">
-          <div className="flex gap-6 justify-center">
+          <div className="flex gap-6 justify-center py-4">
             {loading ? (
               Array.from({ length: visibleBadges }).map((_, i) => (
                 <div key={`skeleton-${i}`} className="flex flex-col items-center gap-3 p-2">

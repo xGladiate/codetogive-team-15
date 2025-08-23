@@ -5,7 +5,7 @@ import { StarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {BadgesCarousel } from "@/components/badges-carousel";
 import DonationHistory from "@/components/donation-history";
-import gradientImg from "@/assets/gradient.png";
+import gradientImg from "@/public/assets/gradient.png";
 
 export default async function DonorProfilePage() {
   const supabase = await createClient();
