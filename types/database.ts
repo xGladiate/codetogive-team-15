@@ -28,11 +28,22 @@ export interface School {
   created_at: string;
 }
 
+export interface RuleConfig {
+  threshold: number;
+}
+
 export interface Badge {
   id: string;
   name: string;
   description: string | null;
   icon_url: string;
-  achieved: boolean;
-  achievedDate?: string | null;
+  rule_type: "donation_count" | "distinct_schools" | "streak_days" | "total_amount";
+  rule_config: RuleConfig;
 };
+
+export interface UserBadges {
+  id: string;
+  profile_id: string;
+  badge_id: string;
+  achieved_at: string;
+}

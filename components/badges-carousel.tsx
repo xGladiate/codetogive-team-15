@@ -6,9 +6,17 @@ import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import type { Badge } from "@/types/database";
 
-type Props = { initialBadges: Badge[] };
+type UIBadge = {
+  id: string;
+  name: string;
+  description: string | null;
+  icon_url: string;
+  achieved: boolean;
+  achievedDate: string | null;
+};
+
+type Props = { initialBadges: UIBadge[] };
 
 export function BadgesCarousel({ initialBadges }: Props) {
   const badges = initialBadges ?? [];
@@ -21,8 +29,8 @@ export function BadgesCarousel({ initialBadges }: Props) {
     setCurrentIndex((p) => (p - 1 + Math.max(badges.length, 1)) % Math.max(badges.length, 1));
 
   const visible = useMemo(() => {
-    if (!badges.length) return [] as Badge[];
-    const out: Badge[] = [];
+    if (!badges.length) return [] as UIBadge[];
+    const out: UIBadge[] = [];
     for (let i = 0; i < Math.min(visibleCount, badges.length); i++) {
       const idx = (currentIndex + i) % badges.length;
       out.push(badges[idx]);

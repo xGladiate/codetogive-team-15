@@ -7,6 +7,16 @@ import {BadgesCarousel } from "@/components/badges-carousel";
 import DonationHistory from "@/components/donation-history";
 import gradientImg from "@/public/assets/gradient.png";
 import { Badge } from "@/types/database"
+import { recomputeAndPersistUserBadges } from "@/lib/badges/evaluator";
+
+type UIBadge = {
+  id: string;
+  name: string;
+  description: string | null;
+  icon_url: string;
+  achieved: boolean;
+  achievedDate: string | null;
+};
 
 export const dynamic = "force-dynamic";
 
@@ -35,46 +45,44 @@ export default async function DonorProfilePage({
   if (profileError || !profile) redirect("/auth/login");
   if (profile.role !== "donor") redirect("/");
 
-  const { data, error } = await supabase
-  .from("badges")
-  .select(`
-    id,
-    name,
-    description,
-    icon_url,
-    user_badges:user_badges!left(
-      profile_id,
-      badge_id,
-      achieved_at
-    )
-  `)
-  .eq("user_badges.profile_id", user.id) // <- ensure join rows are only for this user
-  .order("id", { ascending: true });
+  await recomputeAndPersistUserBadges(user.id);
 
-  if (error) {
-    console.error("badges join fetch error:", error.message);
+  // 2) Fetch all badges (catalog) including rule fields
+  const { data: badges, error: badgesErr } = await supabase
+    .from("badges")
+    .select("id, name, description, icon_url, rule_type, rule_config")
+    .order("id", { ascending: true });
+  
+  if (badgesErr) {
+    console.error("badges fetch error:", badgesErr.message);
   }
 
-  type JoinedRow = {
-    id: string;
-    name: string;
-    description: string | null;
-    icon_url: string | null;
-    user_badges: { profile_id: string; badge_id: string; achieved_at: string | null }[] | null;
-  };
+  // 3) Fetch user's awarded rows
+  const { data: awardedRows, error: awardedErr } = await supabase
+    .from("user_badges")
+    .select("badge_id, achieved_at")
+    .eq("user_id", user.id);
 
-  const initialBadges: Badge[] = (data as JoinedRow[] ?? []).map((b) => {
-    const ub = b.user_badges?.[0]; // left-join -> 0 or 1 row for this user
+  if (awardedErr) {
+    console.error("user_badges fetch error:", awardedErr.message);
+  }
+
+  const achievedMap = new Map<string, string | null>();
+  for (const r of awardedRows ?? []) {
+    achievedMap.set(r.badge_id as string, (r as any).achieved_at ?? null);
+  }
+
+  const initialBadges: UIBadge[] = (badges as Badge[] ?? []).map((b) => {
+    const date = achievedMap.get(b.id) ?? null;
     return {
       id: b.id,
       name: b.name,
       description: b.description,
       icon_url: b.icon_url ?? "",
-      achieved: !!ub,                               // true if a row exists
-      achievedDate: ub?.achieved_at ?? null,        // date if exists
+      achieved: achievedMap.has(b.id),
+      achievedDate: date,
     };
   });
-
 
   const { data: sumRows, error: sumError } = await supabase
     .from("donations")
@@ -115,22 +123,16 @@ export default async function DonorProfilePage({
                   {profile.name || "Donor"}
                 </h1>
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-gray-600 text-sm sm:text-base">
-                  <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />
-                  <span className="text-yellow-600 font-semibold">{totalFundedDisplay}</span>
                   <span className="text-gray-500">Donated</span>
+                  <span className="text-yellow-600 font-semibold">${totalFundedDisplay}</span>
                 </div>
               </div>
             </div>
-
-            {/* Dashboard Button */}
-            <Button className="w-full md:w-auto bg-green-700 hover:bg-green-800 text-white px-5 py-3">
-              VIEW DONOR DASHBOARD
-            </Button>
           </div>
 
           {/* Badges */}
           <section className="py-2">
-            <BadgesCarousel initialBadges={(initialBadges as Badge[]) ?? []} />
+            <BadgesCarousel initialBadges={initialBadges} />
           </section>
 
           {/* Donation History */}
