@@ -44,7 +44,7 @@ export function SignUpForm({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/donor`,
+          emailRedirectTo: `${window.location.origin}/auth/login`,
           data: { role: "donor" } // saved in user_metadata
         },
       });

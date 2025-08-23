@@ -1,11 +1,21 @@
+"use client";
+
 import { Package } from "@/types/database";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Button } from "../ui/button";
 
 interface Props {
   package: Package;
 }
 
 export default function PackageCard({ package: pkg }: Props) {
+  const router = useRouter();
+
+  const handleDonate = () => {
+    router.push(`/donate?packageId=${pkg.id}`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
       <div className="relative h-48">
@@ -19,18 +29,24 @@ export default function PackageCard({ package: pkg }: Props) {
       <div className="p-6">
         <h3 className="text-xl font-semibold mb-2">{pkg.name}</h3>
         <p className="text-gray-600 mb-4">{pkg.description}</p>
-        {!pkg.amount ? (
-          <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+        {pkg.amount === 0 ? (
+          <Button
+            onClick={handleDonate}
+            className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
             Donate
-          </button>
+          </Button>
         ) : (
           <div className="flex justify-between items-center">
             <span className="text-xl font-bold text-green-600">
               HK${pkg.amount.toLocaleString()}
             </span>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+            <Button
+              onClick={handleDonate}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
               Donate
-            </button>
+            </Button>
           </div>
         )}
       </div>

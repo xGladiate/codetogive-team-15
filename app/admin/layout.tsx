@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from "recharts"
 import { TrendingUp, DollarSign, Users, Target, Calendar, Download, LogOut } from "lucide-react"
 import Link from "next/link";
+import NavigationText from "@/components/navigator-text";
 
 const monthlyData = [
   { month: "Jan", donations: 45000, projected: 50000 },
@@ -40,25 +41,19 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="flex h-16 items-center justify-between px-6">
-      {/* Left Section */}
-      <div className="flex items-center gap-4">
-      <h1 className="text-2xl font-bold text-foreground">Home</h1>
-      <Badge variant="secondary" className="bg-primary/10 text-primary">
-        Live Dashboard
-      </Badge>
-    </div>
-
-      {/* Center Navigation */}
-      <nav className="flex items-center gap-20">
-        <button className="text-sm text-white-800 hover:text-white-900 transition-colors">Package Options</button>
-        <button className="text-sm text-white-800 hover:text-white-900 transition-colors">Content Sharing</button>
-        <button className="text-sm text-white-800 hover:text-white-900 transition-colors">Donor Engagement</button>
-        <button className="text-sm text-white-800 hover:text-white-900 transition-colors">Outreach Tool</button>
-      </nav>
+    <main className="min-h-screen flex flex-col items-center">
+      <div className="flex-1 w-full flex flex-col gap-20 items-center">
+        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
+          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
+            <NavigationText label="Home" path="/" />
+            <NavigationText label="Outreach Tool" path="/outreach" />
+            <NavigationText label="Package Options" path="/package" />
+            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+          </div>
+        </nav>
+        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
+          {children}
+        </div>
 
       <LogoutButton />
       </div>
