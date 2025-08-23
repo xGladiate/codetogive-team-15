@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
   NavigationMenuItem,
@@ -8,6 +7,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import DonateButton from "./DonateButton";
+import { AuthButton } from "@/components/auth-button";
 
 export default async function Header() {
   const supabase = await createClient();
@@ -63,24 +63,7 @@ export default async function Header() {
 
           <div className="flex gap-3">
             <DonateButton />
-
-            {!user ? (
-              <Button
-                asChild
-                variant="default"
-                className="bg-gray-800 hover:bg-gray-700"
-              >
-                <Link href="/auth/login">Login</Link>
-              </Button>
-            ) : (
-              <Button
-                asChild
-                variant="default"
-                className="bg-gray-800 hover:bg-gray-700"
-              >
-                <Link href="/auth/logout">Logout</Link>
-              </Button>
-            )}
+            <AuthButton />
           </div>
         </div>
       </nav>
