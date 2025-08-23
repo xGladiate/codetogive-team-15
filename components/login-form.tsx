@@ -42,19 +42,19 @@ export function LoginForm({
     const user = data.user;
     if (!user) throw new Error("No user found");
 
-      const { data: profile, error: profileError } = await supabase
-            .from("profiles")
+      const { data: userRole, error: userError } = await supabase
+            .from("users")
             .select("role")
             .eq("id", user.id)
             .single();
 
-          if (profileError) throw profileError;
-          if (!profile) throw new Error("Profile not found");
+          if (userError) throw userError;
+          if (!userRole) throw new Error("User not found");
 
           // Redirect based on user role
-          if (profile.role === "donor") {
+          if (userRole.role === "donor") {
             router.push("/donor");
-          } else if (profile.role === "admin") {
+          } else if (userRole.role === "admin") {
             router.push("/admin");
           } else {
             throw new Error("Unknown role");
