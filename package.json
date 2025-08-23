@@ -36,10 +36,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.62.0",
     "react-rnd": "^10.5.2",
-<<<<<<< HEAD
-=======
     "recharts": "^3.1.2",
->>>>>>> c16446900065c9cf37c08c76b533e4363fb72137
     "sonner": "^2.0.7",
     "stripe": "^18.4.0",
     "supabase": "^2.34.3",
