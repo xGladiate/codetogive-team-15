@@ -41,23 +41,27 @@ export default function ProtectedLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <NavigationText label="Home" path="/" />
-            <NavigationText label="Outreach Tool" path="/outreach" />
-            <NavigationText label="Package Options" path="/package" />
-            {!hasEnvVars ? <EnvVarWarning /> : <AuthButton />}
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="border-b border-border bg-card">
+        <div className="flex h-16 items-center justify-between px-6">
+          <div className="flex items-center gap-4">
+            <NavigationText className="text-2xl font-bold text-foreground" label="Home" path="/" />
+            <Badge variant="secondary" className="bg-primary/10 text-primary">
+              Live Dashboard
+            </Badge>
           </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          {children}
+          <div className="flex items-center gap-3">
+          <nav className="flex items-center gap-3">
+            <NavigationText label="Package Options" path="/package" />
+            <NavigationText label="Content Sharing" path="/package" />
+            <NavigationText label="Donor Engagement" path="/outreach" />
+            <NavigationText label="Outreach Tool" path="/outreach" />
+          </nav>
+          <LogoutButton />
         </div>
-
-      <LogoutButton />
-      </div>
-    </header>
+        </div>
+      </header>
 
       <main className="p-6 space-y-6">
         {/* Key Metrics */}
@@ -219,6 +223,7 @@ export default function ProtectedLayout({
             </div>
           </CardContent>
         </Card>
+        {children}
       </main>
     </div>
   );
