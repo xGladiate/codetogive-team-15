@@ -59,7 +59,7 @@ export function BadgesCarousel() {
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-foreground py-4">Badges</h2>
+        <h2 className="text-xl font-semibold text-foreground pt-4">Badges</h2>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Info className="w-4 h-4" />
           <span>Click in to see details</span>
