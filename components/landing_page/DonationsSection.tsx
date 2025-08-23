@@ -135,18 +135,21 @@ export default function DonationsSection({ packages }: Props) {
                 effectiveness.
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {communityPackages
-                .slice()
-                .sort((a, b) => {
-                  if (a.amount == null && b.amount == null) return 0;
-                  if (a.amount == null) return 1;
-                  if (b.amount == null) return -1;
-                  return a.amount - b.amount;
-                })
-                .map((pkg) => (
-                  <PackageCard key={pkg.id} package={pkg} />
-                ))}
+            <div>
+              <h2 className="text-4xl font-bold mb-6">Community package Options</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {communityPackages
+                  .slice()
+                  .sort((a, b) => {
+                    if (a.amount == null && b.amount == null) return 0;
+                    if (a.amount == null) return 1;
+                    if (b.amount == null) return -1;
+                    return a.amount - b.amount;
+                  })
+                  .map((pkg) => (
+                    <PackageCard key={pkg.id} package={pkg} />
+                  ))}
+              </div>
             </div>
           </div>
         </div>
