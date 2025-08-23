@@ -14,23 +14,14 @@ export default async function Home() {
   const user = authUser?.claims;
 
   if (user) {
-    // Only query roles if the user exists
-    const { data: userRole, error } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.sub)
-      .single();
-
-    if (error || !userRole) {
-      // Fall back to showing landing page instead of throwing an error
-    } else {
+    console.log("User is logged in:", user);
       // Redirect based on user role
-      if (userRole.role === "donor") {
+      if (user.user_metadata.role === "donor") {
         redirect("/donor");
-      } else if (userRole.role === "admin") {
+      } else if (user.user_metadata.role === "admin") {
         redirect("/admin");
       }
-    }
+    
   }
 
   // Fetch packages from Supabase
