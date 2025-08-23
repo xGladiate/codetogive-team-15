@@ -125,31 +125,31 @@ export default function DonateForm({
       newErrors.email = "Please enter a valid email address";
     }
 
-    // Card number validation
-    if (!cardNumber.trim()) {
-      newErrors.cardNumber = "Card number is required";
-    } else if (!validateCardNumber(cardNumber)) {
-      newErrors.cardNumber = "Card number must be 16 digits";
-    }
+    // // Card number validation
+    // if (!cardNumber.trim()) {
+    //   newErrors.cardNumber = "Card number is required";
+    // } else if (!validateCardNumber(cardNumber)) {
+    //   newErrors.cardNumber = "Card number must be 16 digits";
+    // }
 
-    // Expiry date validation
-    if (!expiryDate.trim()) {
-      newErrors.expiryDate = "Expiry date is required";
-    } else if (!validateExpiryDate(expiryDate)) {
-      newErrors.expiryDate = "Please enter a valid expiry date (MM/YY)";
-    }
+    // // Expiry date validation
+    // if (!expiryDate.trim()) {
+    //   newErrors.expiryDate = "Expiry date is required";
+    // } else if (!validateExpiryDate(expiryDate)) {
+    //   newErrors.expiryDate = "Please enter a valid expiry date (MM/YY)";
+    // }
 
-    // CVC validation
-    if (!cvc.trim()) {
-      newErrors.cvc = "CVC is required";
-    } else if (!validateCvc(cvc)) {
-      newErrors.cvc = "CVC must be 3 digits";
-    }
+    // // CVC validation
+    // if (!cvc.trim()) {
+    //   newErrors.cvc = "CVC is required";
+    // } else if (!validateCvc(cvc)) {
+    //   newErrors.cvc = "CVC must be 3 digits";
+    // }
 
-    // Name on card validation
-    if (!nameOnCard.trim()) {
-      newErrors.nameOnCard = "Name on card is required";
-    }
+    // // Name on card validation
+    // if (!nameOnCard.trim()) {
+    //   newErrors.nameOnCard = "Name on card is required";
+    // }
 
     // Custom amount validation
     if (
@@ -216,23 +216,50 @@ export default function DonateForm({
 
       console.log("User ID:", user.id);
 
-      const { error: donationError } = await supabase
-        .from("donations")
-        .insert({
-          amount: amount,
-          donor_id: user.id,
-          school_id: schoolId,
-          package_id: currentPackage.id,
-          remarks: remarks,
-          type: frequency === "one-time" ? "one_off" : "recurring",
-          payment_method: paymentMethod,
-          created_at: new Date().toISOString(),
-          email: user.email
-        })
-        .select()
-        .single();
+      if (paymentMethod === "Bank") {
+        const { error: donationError } = await supabase
+          .from("donations")
+          .insert({
+            amount: amount,
+            donor_id: user.id,
+            school_id: schoolId,
+            package_id: currentPackage.id,
+            remarks: remarks,
+            type: frequency === "one-time" ? "one_off" : "recurring",
+            payment_method: paymentMethod,
+            created_at: new Date().toISOString(),
+            email: user.email
+          })
+          .select()
+          .single();
 
-      if (donationError) throw donationError;
+        if (donationError) throw donationError;
+        toast.success("Payment recorded successfully.");
+        router.push("/donor?success=true");
+      } else {
+        // Stripe flow
+        const res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount,
+            email,
+            packageName: currentPackage.name,
+            remarks,
+            frequency,  // "one-time" | "monthly" | "annual"
+            userId: user.id,
+            schoolId: selectedSchool === "no_preference" ? null : selectedSchool || null,
+            packageId: currentPackage.id,
+          }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(data.error || "Stripe session failed");
+          throw new Error(data.details || data.error || "Stripe session failed");
+        }
+        window.location.href = data.url;
+      }
 
       if (frequency !== "one-time") {
         const { error: recurringError } = await supabase
@@ -246,10 +273,7 @@ export default function DonateForm({
 
         if (recurringError) throw recurringError;
       }
-
-      // Redirect to success page or donor dashboard
-      toast.success("Payment recorded successfully.");
-      router.push("/donor?success=true");
+      
     } catch (error) {
       console.error("Error processing donation:", error);
       toast.error("Error processing donation. Please try again.");
@@ -259,15 +283,15 @@ export default function DonateForm({
   };
 
   const isFormValid = () => {
-    return (
-      validateEmail(email) &&
-      validateCardNumber(cardNumber) &&
-      validateExpiryDate(expiryDate) &&
-      validateCvc(cvc) &&
-      nameOnCard.trim() &&
-      (currentPackage.name !== "Custom Amount" ||
-        (customAmount && Number(customAmount) > 0))
-    );
+    const amountOk =
+      currentPackage.name !== "Custom Amount" ||
+      (!!customAmount && Number(customAmount) > 0);
+  
+    if (paymentMethod === "Stripe") {
+      return validateEmail(email) && amountOk;
+    }
+  
+    return validateEmail(email) && amountOk;
   };
 
   return (
@@ -445,132 +469,144 @@ export default function DonateForm({
           <CardHeader>
             <CardTitle>Payment Information</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-          <div>
-              <Label className="text-base font-medium">Payment Method</Label>
-              <RadioGroup
-                value={paymentMethod}
-                onValueChange={(v: "Bank" | "Stripe") => setPaymentMethod(v)}
-                className="mt-2"
+          <CardContent className="space-y-5">
+          {/* Method toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-base font-semibold">Payment Method</Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Choose how you’d like to donate
+              </p>
+            </div>
+
+            <div className="inline-flex rounded-xl border overflow-hidden">
+              <Button
+                type="button"
+                variant={paymentMethod === "Bank" ? "default" : "ghost"}
+                className="rounded-none px-4"
+                onClick={() => setPaymentMethod("Bank")}
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Bank" id="pay-bank" />
-                  <Label htmlFor="pay-bank">Bank Transfer</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Stripe" id="pay-card" />
-                  <Label htmlFor="pay-card">Stripe</Label>
-                </div>
-              </RadioGroup>
+                Bank
+              </Button>
+              <Button
+                type="button"
+                variant={paymentMethod === "Stripe" ? "default" : "ghost"}
+                className="rounded-none px-4"
+                onClick={() => setPaymentMethod("Stripe")}
+              >
+                Stripe
+                <span className="ml-2 rounded bg-amber-100 text-amber-700 px-1.5 py-0.5 text-[10px]">
+                  Test
+                </span>
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="email">Email*</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) {
-                    setErrors((prev) => ({ ...prev, email: "" }));
-                  }
-                }}
-                className={errors.email ? "border-red-500" : ""}
-                placeholder="your@email.com"
-              />
-              {errors.email && (
-                <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-              )}
-            </div>
+          </div>
 
-            <div>
-              <Label htmlFor="card-number">Card Information*</Label>
-              <Input
-                id="card-number"
-                value={cardNumber}
-                onChange={handleCardNumberChange}
-                placeholder="1234 5678 9012 3456"
-                className={errors.cardNumber ? "border-red-500" : ""}
-                maxLength={19} // 16 digits + 3 spaces
-              />
-              {errors.cardNumber && (
-                <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>
-              )}
-            </div>
+          {/* Email (always shown) */}
+          <div>
+            <Label htmlFor="email">Email*</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+              }}
+              className={errors.email ? "border-red-500" : ""}
+              placeholder="you@example.com"
+            />
+            {errors.email && (
+              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+            )}
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Input
-                  placeholder="MM/YY"
-                  value={expiryDate}
-                  onChange={handleExpiryDateChange}
-                  className={errors.expiryDate ? "border-red-500" : ""}
-                  maxLength={5}
-                />
-                {errors.expiryDate && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.expiryDate}
+          {/* Stripe card fields */}
+          {paymentMethod === "Stripe" && (
+            <div className="space-y-3 rounded-xl border p-4 bg-card/50">
+              <Label className="font-medium">Stripe Checkout</Label>
+              <p className="text-xs text-muted-foreground">
+                You’ll be redirected to a secure Stripe page to complete your donation.  
+                Use the test card <code className="bg-muted px-1.5 py-0.5 rounded">4242 4242 4242 4242</code> for testing.
+              </p>
+            </div>
+          )}
+
+          {/* Bank instructions */}
+          {paymentMethod === "Bank" && (
+            <div className="space-y-3 rounded-xl border p-4 bg-card/50">
+              <div className="flex items-start justify-between">
+                <div>
+                  <Label className="font-medium">Bank Transfer Instructions</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    We’ll mark your donation as <span className="font-medium">pending</span> until we verify your transfer.
                   </p>
-                )}
+                </div>
+                <span className="rounded bg-amber-100 text-amber-700 px-2 py-0.5 text-[10px]">
+                  Manual
+                </span>
               </div>
-              <div>
-                <Input
-                  placeholder="CVC"
-                  value={cvc}
-                  onChange={handleCvcChange}
-                  className={errors.cvc ? "border-red-500" : ""}
-                  maxLength={3}
-                />
-                {errors.cvc && (
-                  <p className="text-red-500 text-sm mt-1">{errors.cvc}</p>
-                )}
-              </div>
-            </div>
 
-            <div>
-              <Label htmlFor="name-on-card">Name on card*</Label>
-              <Input
-                id="name-on-card"
-                placeholder="Full name"
-                value={nameOnCard}
-                onChange={(e) => {
-                  setNameOnCard(e.target.value);
-                  if (errors.nameOnCard) {
-                    setErrors((prev) => ({ ...prev, nameOnCard: "" }));
-                  }
-                }}
-                className={errors.nameOnCard ? "border-red-500" : ""}
-              />
-              {errors.nameOnCard && (
-                <p className="text-red-500 text-sm mt-1">{errors.nameOnCard}</p>
-              )}
+              <CopyRow label="Bank" value="HSBC Hong Kong" />
+              <CopyRow label="Account Name" value="REACH Foundation" />
+              <CopyRow label="Account Number" value="123-456789-001" />
+              <CopyRow label="Reference" value={email || user.email || "your email"} hint="Use your email for reconciliation" />
             </div>
+          )}
 
-            <div>
-              <Label htmlFor="country">Country or region*</Label>
-              <Select value={country} onValueChange={setCountry}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="singapore">Singapore</SelectItem>
-                  <SelectItem value="hong-kong">Hong Kong</SelectItem>
-                  <SelectItem value="malaysia">Malaysia</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              onClick={handleSubmit}
-              disabled={isProcessing}
-              className="w-full bg-blue-900 hover:bg-blue-800 text-white py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-              size="lg"
-            >
-              {isProcessing ? "Processing..." : `Pay HK$${getAmount()}`}
-            </Button>
-          </CardContent>
+          {/* Submit */}
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isProcessing}
+            className={`w-full h-11 text-white disabled:opacity-50 disabled:cursor-not-allowed
+              ${paymentMethod === "Stripe"
+                ? "bg-[#635bff] hover:bg-[#635bff]/90"
+                : "bg-blue-900 hover:bg-blue-800"
+              }`}
+            size="lg"
+          >
+            {isProcessing
+              ? "Processing..."
+              : paymentMethod === "Bank"
+              ? `Confirm Bank Pledge (HK$${getAmount()})`
+              : `Pay with Stripe (HK$${getAmount()})`}
+          </Button>
+        </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function CopyRow({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2 items-center">
+      <p className="text-sm text-muted-foreground col-span-1">{label}</p>
+      <div className="col-span-2 flex items-center gap-2">
+        <code className="block w-full truncate rounded bg-muted px-2 py-1 text-xs">
+          {value}
+        </code>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-7 px-2 text-xs"
+          onClick={() => navigator.clipboard.writeText(value)}
+        >
+          Copy
+        </Button>
+      </div>
+      {hint && (
+        <p className="col-span-3 text-[11px] text-muted-foreground mt-1">{hint}</p>
+      )}
     </div>
   );
 }

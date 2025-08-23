@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Donation } from "@/types/database"
 import { Button } from "./ui/button";
+import DonationStatus from "./donation-status";
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -38,7 +39,7 @@ export default async function DonationHistory({ page = "1", pageSize = "10" }: P
   const { data, error, count } = await supabase
     .from("donations")
     .select(
-      "id, amount, donor_id, school_id, package_id, remarks, type, payment_method, created_at",
+      "id, amount, donor_id, school_id, package_id, remarks, type, payment_method, payment_status, created_at",
       { count: "exact" }
     )
     .eq("donor_id", user.id)
@@ -71,6 +72,7 @@ export default async function DonationHistory({ page = "1", pageSize = "10" }: P
                 <th className="w-[140px] px-4 py-3">Amount (HKD)</th>
                 <th className="w-[120px] px-4 py-3">Type</th>
                 <th className="w-[140px] px-4 py-3">Payment Method</th>
+                <th className="w-[140px] px-4 py-3">Payment Status</th>
                 <th className="w-[140px] px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -92,6 +94,9 @@ export default async function DonationHistory({ page = "1", pageSize = "10" }: P
                       </span>
                     </td>
                     <td className="px-4 py-3">{pmLabel(d.payment_method)}</td>
+                    <td className="px-4 py-3">
+                      <DonationStatus donationId={Number(d.id)} />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end">
                         <Button>Receipt</Button>

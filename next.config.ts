@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/storage/v1/object/**",
       },
+      {
+        protocol: "https",
+        hostname: "www.pokemon.com",
+        pathname: "/static-assets/**",
+      },
     ],
   },
 };

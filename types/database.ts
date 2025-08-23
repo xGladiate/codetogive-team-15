@@ -17,6 +17,7 @@ export interface Donation {
   remarks: string | null;
   type: "one_off" | "recurring";
   payment_method: "Stripe" | "Bank"
+  payment_status: "pending" | "paid" | "failed" | "refunded" | "cancelled"
   created_at: string;
 }
 
