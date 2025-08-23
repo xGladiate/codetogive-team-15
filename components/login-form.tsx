@@ -53,7 +53,7 @@ export function LoginForm({
 
     // Redirect based on user role
     if (userRole.role === "donor") {
-      router.push("/donor");
+      router.push("/");
     } else if (userRole.role === "admin") {
       router.push("/admin");
     } else {
