@@ -92,7 +92,7 @@ export default function ProspectorPage() {
   const copy = (t: string) => navigator.clipboard.writeText(t || "");
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
+    <div className="max-w-6xl min-h-screen mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-semibold">Prospect Finder (Google CSE, compliant)</h1>
       <p className="text-sm opacity-80">
         Describe who you want. AI turns it into keywords & boolean. Then we use Google Custom Search to find public LinkedIn pages (bios/posts).

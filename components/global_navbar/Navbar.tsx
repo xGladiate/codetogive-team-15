@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { AuthButton } from "@/components/auth-button";
-import NavigationText from "../navigator-text";
+import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { User } from "@supabase/supabase-js";
 
@@ -13,6 +14,7 @@ export default function Navbar() {
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const pathname = usePathname();
 
   useEffect(() => {
     // Get initial user
@@ -44,6 +46,31 @@ export default function Navbar() {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
+  const NavButton = ({
+    href,
+    children,
+  }: {
+    href: string;
+    children: React.ReactNode;
+  }) => {
+    const isActive = pathname === href;
+
+    return (
+      <Button
+        asChild
+        variant={isActive ? "default" : "ghost"}
+        size="default"
+        className={
+          isActive
+            ? "bg-gray-900 text-white hover:bg-gray-800"
+            : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+        }
+      >
+        <Link href={href}>{children}</Link>
+      </Button>
+    );
+  };
+
   if (loading) {
     return (
       <nav className="bg-cream-50 py-3 px-6 shadow-sm">
@@ -60,12 +87,13 @@ export default function Navbar() {
             />
             PROJECT REACH
           </Link>
-          <div className="flex gap-6 items-center">
-            {/* Loading skeleton */}
-            <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+          <div className="flex gap-2 items-center">
+            <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
           </div>
           <div className="flex gap-3">
-            <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
           </div>
         </div>
       </nav>
@@ -88,20 +116,23 @@ export default function Navbar() {
           PROJECT REACH
         </Link>
 
-        <div className="flex gap-6 items-center">
-          <NavigationText label="Home" path="/" />
+        <div className="flex gap-2 items-center">
+          <NavButton href="/">Home</NavButton>
           {user && userRole === "admin" ? (
             <>
-              <NavigationText label="Admin Page" path="/admin" />
-              <NavigationText label="Outreach Tool" path="/outreach" />
-              <NavigationText label="Package Management" path="/package" />
+              <NavButton href="/admin">Admin Dashboard</NavButton>
+              <NavButton href="/package">Package Management</NavButton>
+              <NavButton href="/prospector">Prospecting Tool</NavButton>
+              <NavButton href="/writer">AI Writer</NavButton>
+            </>
+          ) : user ? (
+            <>
+              {user && <NavButton href="/donor">Donor Profile</NavButton>}
+              <NavButton href="/donor-dashboard">Donor Dashboard</NavButton>
+              <NavButton href="/donate">Donate</NavButton>
             </>
           ) : (
-            <>
-              {user && <NavigationText label="Donor Profile" path="/donor" />}
-              <NavigationText label="Donor Dashboard" path="/donor-dashboard" />
-              <NavigationText label="Donate" path="/donate" />
-            </>
+            <NavButton href="/donate">Donate</NavButton>
           )}
         </div>
 

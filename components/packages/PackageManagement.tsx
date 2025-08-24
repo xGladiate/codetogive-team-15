@@ -97,8 +97,12 @@ export default function PackageManagement({
     }
   };
 
-  const corePackages = packages.filter((pkg) => pkg.type === "core");
-  const communityPackages = packages.filter((pkg) => pkg.type === "community");
+  const corePackages = packages
+    .filter((pkg) => pkg.type === "core")
+    .sort((a, b) => a.amount - b.amount);
+  const communityPackages = packages
+    .filter((pkg) => pkg.type === "community")
+    .sort((a, b) => a.amount - b.amount);
 
   return (
     <div className="space-y-8">
