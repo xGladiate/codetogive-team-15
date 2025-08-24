@@ -95,7 +95,10 @@ export default async function DonationHistory({ page = "1", pageSize = "10" }: P
                     </td>
                     <td className="px-4 py-3">{pmLabel(d.payment_method)}</td>
                     <td className="px-4 py-3">
-                      <DonationStatus donationId={Number(d.id)} />
+                      <DonationStatus
+                        donationId={Number(d.id)}
+                        paymentMethod={d.payment_method}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end">
