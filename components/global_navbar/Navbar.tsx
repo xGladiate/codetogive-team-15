@@ -125,12 +125,14 @@ export default function Navbar() {
               <NavButton href="/prospector">Prospecting Tool</NavButton>
               <NavButton href="/writer">AI Writer</NavButton>
             </>
-          ) : (
+          ) : user ? (
             <>
               {user && <NavButton href="/donor">Donor Profile</NavButton>}
               <NavButton href="/donor-dashboard">Donor Dashboard</NavButton>
               <NavButton href="/donate">Donate</NavButton>
             </>
+          ) : (
+            <NavButton href="/donate">Donate</NavButton>
           )}
         </div>
 
