@@ -438,8 +438,7 @@ const saveToDB = async () => {
     // 2) Retrieve URL (choose ONE approach)
 
     // (A) PUBLIC bucket (simple)
-    const { data: pub, error: urlErr } = supabase.storage.from("stories").getPublicUrl(path);
-    if (urlErr) throw urlErr;
+    const { data: pub } = supabase.storage.from("stories").getPublicUrl(path);
     const contentUrl = pub.publicUrl; // contains /object/public/stories/...
 
     // (B) If bucket is PRIVATE, use this instead of (A):

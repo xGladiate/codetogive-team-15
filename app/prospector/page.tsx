@@ -212,7 +212,7 @@ export default function ProspectorPage() {
     return 2;
   };
 
-  const matchScore = (r: SearchItem, required: string[], mode: "people"|"company") => {
+  const matchScore = (r: SearchItem, required: string[], mode?: "people"|"company") => {
   const hay = normalize(`${r.title} ${r.snippet}`);
   let score = 0;
 
