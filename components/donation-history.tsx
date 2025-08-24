@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Donation } from "@/types/database"
-import { Button } from "./ui/button";
+import { ReceiptButton } from "@/components/receipt-button";
 import DonationStatus from "./donation-status";
 
 const formatDate = (iso: string) =>
@@ -99,7 +99,7 @@ export default async function DonationHistory({ page = "1", pageSize = "10" }: P
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end">
-                        <Button>Receipt</Button>
+                        <ReceiptButton donationId={Number(d.id)}/>
                       </div>
                     </td>
                   </tr>
