@@ -4,22 +4,16 @@ import Mailjet from "node-mailjet";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { createClient } from "@/lib/supabase/server";
 
-export const runtime = "nodejs"; // ensure Node runtime for pdf-lib & Mailjet
-
 const mailjet = Mailjet.apiConnect(
   process.env.MJ_APIKEY_PUBLIC!,
   process.env.MJ_APIKEY_PRIVATE!
 );
 
-// ---- Signature config ----
-// Prefer a storage path like "signature.png" in bucket "assets".
-// You can also set SIGNATURE_URL to a full (public/signed) URL if you don't want to read from storage.
 const SIG_BUCKET = "assets";
 const SIG_PATH = "signature.png";
-const SIG_URL = ""; // optional override
+const SIG_URL = "";
 const SIGNER_NAME = "Project REACH";
 
-// --------- utils ----------
 function formatCurrency(amount: number, currency = "HKD") {
   try {
     return new Intl.NumberFormat("en-HK", { style: "currency", currency }).format(amount);
@@ -32,13 +26,11 @@ async function embedSignatureBytes(
   supabase: ReturnType<typeof createClient> extends Promise<infer T> ? T : any
 ): Promise<Uint8Array | null> {
   try {
-    // Use URL if provided
     if (SIG_URL && /^https?:\/\//i.test(SIG_URL)) {
       const res = await fetch(SIG_URL);
       if (!res.ok) return null;
       return new Uint8Array(await res.arrayBuffer());
     }
-    // Fall back to storage path
     const { data: blob, error } = await (await supabase).storage.from(SIG_BUCKET).download(SIG_PATH);
     if (error || !blob) return null;
     return new Uint8Array(await blob.arrayBuffer());
@@ -47,7 +39,6 @@ async function embedSignatureBytes(
   }
 }
 
-// --------- handler ---------
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -58,7 +49,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = createClient();
 
-    // Pull donation row
     const { data: donation, error: donationErr } = await (await supabase)
       .from("donations")
       .select(`
@@ -78,7 +68,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: donationErr?.message || "Donation not found" }, { status: 404 });
     }
 
-    // Pull donor email/name
     const { data: user, error: userErr } = await (await supabase)
       .from("users")
       .select("email, name")
@@ -89,7 +78,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: userErr?.message || "Donor email not found" }, { status: 404 });
     }
 
-    // Map fields
     const id = String(donation.id);
     const email = user.email as string;
     const donorName = user.name || "Donor";
@@ -102,7 +90,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
     }
 
-    // --- PDF creation ---
     const pdfDoc = await PDFDocument.create();
     const page = pdfDoc.addPage([595, 842]); // A4
     const timesFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
@@ -116,7 +103,6 @@ export async function POST(req: NextRequest) {
       year: "numeric", month: "long", day: "2-digit",
     });
 
-    // Header
     let y = 800;
     page.drawText("Race for Education Accessibilities for Every Child Limited (1704213)", { x: leftMargin, y, size: 10, font: timesFont });
     y -= lineHeight;
@@ -124,10 +110,8 @@ export async function POST(req: NextRequest) {
     y -= lineHeight;
     page.drawText("T: 3100-0135   F: 3100-0134   E: committee@reach.org.hk", { x: leftMargin, y, size: 10, font: timesFont });
 
-    // Title
     page.drawText("Receipt", { x: 270, y: 720, size: 14, font: boldFont });
 
-    // Details
     y = 690;
     page.drawText(`Date: ${dateStr}`, { x: leftMargin, y, size: fontSize, font: timesFont });
     page.drawText(`Receipt number: ${id}`, { x: 350, y, size: fontSize, font: timesFont });
@@ -137,26 +121,21 @@ export async function POST(req: NextRequest) {
     page.drawText(`Amount received: ${formatCurrency(amount, currency)}`, { x: leftMargin, y, size: fontSize, font: timesFont });
     page.drawText(`Payment method: ${donation.payment_method ?? (providerTxn ? "Online" : "N/A")}`, { x: 350, y, size: fontSize, font: timesFont });
 
-    // --- Authorized Signature box (replaces Remarks box) ---
-    // We reuse the same area where the remarks box used to be.
     y -= 50;
     const boxX = leftMargin;
     const boxTopY = y;
     const boxWidth = 500;
-    const boxHeight = 110; // slightly taller to fit image comfortably
+    const boxHeight = 110;
     const boxPadding = 8;
 
-    // Box border
     page.drawRectangle({
       x: boxX, y: boxTopY - boxHeight, width: boxWidth, height: boxHeight,
       borderColor: rgb(0, 0, 0), borderWidth: 1,
     });
 
-    // Box title
     page.drawText("Authorized Signature", { x: boxX + 5, y: boxTopY - 12, size: fontSize, font: boldFont });
 
-    // Signature line, centered horizontally inside the box
-    const innerY = boxTopY - 70; // line position inside the box
+    const innerY = boxTopY - 70; 
     const boxCenterX = boxX + boxWidth / 2;
     const lineWidth = 220;
     const lineStartX = Math.round(boxCenterX - lineWidth / 2);
@@ -169,7 +148,6 @@ export async function POST(req: NextRequest) {
       color: rgb(0, 0, 0),
     });
 
-    // Try to render signature image above the line
     let usedImage = false;
     try {
       const arr = await embedSignatureBytes(supabase);
@@ -179,7 +157,6 @@ export async function POST(req: NextRequest) {
         const targetW = 160;
         const targetH = (img.height / img.width) * targetW;
         const imgX = Math.round(boxCenterX - targetW / 2);
-        // place image a bit above the line
         page.drawImage(img, { x: imgX, y: innerY + 10, width: targetW, height: targetH });
         usedImage = true;
       }
@@ -187,7 +164,6 @@ export async function POST(req: NextRequest) {
       usedImage = false;
     }
 
-    // Fallback typed signature if image isn’t available
     if (!usedImage) {
       const fallbackText = "/s/ " + SIGNER_NAME;
       const w = timesFont.widthOfTextAtSize(fallbackText, 10);
@@ -199,7 +175,6 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Name label below line
     const nameW = boldFont.widthOfTextAtSize(SIGNER_NAME, 11);
     page.drawText(SIGNER_NAME, {
       x: Math.round(boxCenterX - nameW / 2),
@@ -208,17 +183,14 @@ export async function POST(req: NextRequest) {
       font: boldFont,
     });
 
-    // Disclaimer (unchanged)
     const englishDisclaimer =
       "RACE FOR EDUCATION ACCESSIBILITIES FOR EVERY CHILD LIMITED is a registered charity institution in Hong Kong which is exempt from tax under Section 88 of the Hong Kong Inland Revenue Ordinance. Donations of HK$100 or above are tax deductible.";
     const disclaimerY = 120;
     page.drawText(englishDisclaimer, { x: leftMargin, y: disclaimerY - 20, size: 9, font: timesFont, maxWidth: 500 });
 
-    // Save PDF
     const pdfBytes = await pdfDoc.save();
     const base64PDF = Buffer.from(pdfBytes).toString("base64");
 
-    // --- Email (remarks removed) ---
     const prettyAmount = formatCurrency(amount, currency);
     const emailHtml = `
       <div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color:#111; line-height:1.5;">
