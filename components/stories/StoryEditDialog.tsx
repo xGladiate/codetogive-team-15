@@ -25,6 +25,7 @@ type Story = {
   story: string | null;
   content_type: "text" | "image";
   content_url: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   metadata: any;
   created_at: string;
 };
