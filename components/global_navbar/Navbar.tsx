@@ -113,7 +113,7 @@ export default function Navbar() {
             width={24}
             height={24}
           />
-          PROJECT REACH
+          REACH CONNECT
         </Link>
 
         <div className="flex gap-2 items-center">
@@ -121,8 +121,8 @@ export default function Navbar() {
           {user && userRole === "admin" ? (
             <>
               <NavButton href="/admin">Admin Dashboard</NavButton>
-              <NavButton href="/package">Package Management</NavButton>
-              <NavButton href="/prospector">Prospecting Tool</NavButton>
+              <NavButton href="/management">Manage System</NavButton>
+              <NavButton href="/prospector">AI-Powered Outreach</NavButton>
               <NavButton href="/writer">AI Writer</NavButton>
             </>
           ) : user ? (
