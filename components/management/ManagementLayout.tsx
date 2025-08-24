@@ -28,7 +28,7 @@ export default function ManagementLayout({ packages, schools }: Props) {
     return (
       <Button
         variant={isActive ? "default" : "ghost"}
-        size="sm"
+        size="default"
         onClick={() => setActiveTab(tab)}
         className={
           isActive
