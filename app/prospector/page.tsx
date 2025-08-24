@@ -341,8 +341,8 @@ export default function ProspectorPage() {
 
   // ---------- UI ----------
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Prospect Finder</h1>
+    <div className="max-w-6xl min-h-screen mx-auto p-6 space-y-6">
+      <h1 className="text-2xl font-semibold">Prospect Finder </h1>
       <p className="text-sm opacity-80">
         Describe who you want. AI turns it into keywords &amp; boolean.
       </p>

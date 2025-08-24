@@ -836,8 +836,8 @@ const saveToDB = async () => {
   }, [current, type]);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Content Writer</h1>
+    <div className="max-w-6xl mx-auto min-h-screen p-6 space-y-6">
+      <h1 className="text-2xl font-semibold">Content Writer → Polished + Visual</h1>
 
       <div className="grid gap-4">
         {/* Output type */}
