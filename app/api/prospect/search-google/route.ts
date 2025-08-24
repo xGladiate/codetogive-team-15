@@ -1,22 +1,27 @@
 import { NextRequest } from "next/server";
 
-export const runtime = "nodejs"; // ensure server runtime (not edge)
-export const dynamic = "force-dynamic"; // don't cache in dev
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || "";
 const GOOGLE_CX = process.env.GOOGLE_CX || "";
 
-// Mask helper for safe logs
 const mask = (s: string) => (s ? s.slice(0, 4) + "…" + s.slice(-4) : "(empty)");
 
-type SearchItem = { title: string; link: string; snippet: string; displayLink?: string };
+export type SearchItem = {
+  title: string;
+  link: string;
+  snippet: string;
+  displayLink?: string;
+  sourceQuery?: string;
+};
 
 async function googleSearch(q: string, num = 10): Promise<SearchItem[]> {
-  // Validate env first
   if (!GOOGLE_API_KEY || !GOOGLE_CX) {
-    console.error("[CSE] Missing envs",
-      { GOOGLE_API_KEY_present: !!GOOGLE_API_KEY, GOOGLE_CX_present: !!GOOGLE_CX }
-    );
+    console.error("[CSE] Missing envs", {
+      GOOGLE_API_KEY_present: !!GOOGLE_API_KEY,
+      GOOGLE_CX_present: !!GOOGLE_CX,
+    });
     throw new Error("Missing GOOGLE_API_KEY or GOOGLE_CX");
   }
 
@@ -25,10 +30,9 @@ async function googleSearch(q: string, num = 10): Promise<SearchItem[]> {
   url.searchParams.set("cx", GOOGLE_CX);
   url.searchParams.set("q", q);
   url.searchParams.set("num", String(Math.min(Math.max(num, 1), 10)));
-  url.searchParams.set("gl", "hk"); // optional: geo bias
-  url.searchParams.set("hl", "en"); // optional: language
+  url.searchParams.set("gl", "hk"); // geo bias
+  url.searchParams.set("hl", "en");
 
-  // Log with masked credentials
   const logged = new URL(url);
   logged.searchParams.set("key", mask(GOOGLE_API_KEY));
   logged.searchParams.set("cx", mask(GOOGLE_CX));
@@ -39,7 +43,9 @@ async function googleSearch(q: string, num = 10): Promise<SearchItem[]> {
 
   if (!r.ok) {
     let msg = bodyText;
-    try { msg = JSON.parse(bodyText)?.error?.message || bodyText; } catch {}
+    try {
+      msg = JSON.parse(bodyText)?.error?.message || bodyText;
+    } catch {}
     console.error("[CSE] Error", { status: r.status, msg, query: q });
     throw new Error(`Google CSE ${r.status}: ${msg}`);
   }
@@ -60,14 +66,16 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
-      mode = "people",   // "people" | "company"
+      mode = "people", // "people" | "company"
       location = "Hong Kong",
       boolean = "",
       interests = [] as string[],
     } = body;
 
-    const baseSite = mode === "company" ? "site:linkedin.com/company" : "site:linkedin.com/in";
-    const interestBlock = interests?.length ? `(${interests.map(i => `"${i}"`).join(" OR ")})` : "";
+    const baseSite =
+      mode === "company" ? "site:linkedin.com/company" : "site:linkedin.com/in";
+    const interestBlock =
+      interests?.length ? `(${interests.map((i) => `"${i}"`).join(" OR ")})` : "";
     const probes = `("about" OR "interests" OR "posts" OR "featured")`;
 
     const queries = [
@@ -78,15 +86,17 @@ export async function POST(req: NextRequest) {
 
     console.log("[CSE] Built queries:", queries);
 
-    const batches = await Promise.all(queries.map(q => googleSearch(q, 10)));
+    const batches = await Promise.all(
+      queries.map(async (q) => ({ q, items: await googleSearch(q, 10) }))
+    );
 
     const seen = new Set<string>();
     const merged: SearchItem[] = [];
-    for (const b of batches) {
-      for (const it of b) {
+    for (const { q, items } of batches) {
+      for (const it of items) {
         if (!seen.has(it.link)) {
           seen.add(it.link);
-          merged.push(it);
+          merged.push({ ...it, sourceQuery: q });
         }
       }
     }

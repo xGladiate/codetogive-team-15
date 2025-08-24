@@ -10,6 +10,8 @@ import Newsletter from "@/components/templates/Newsletter";
 import * as htmlToImage from "html-to-image";
 import { saveAs } from "file-saver";
 import EditorCanvas, { Layer } from "@/components/templates/EditorCanvas";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 /* ========= Helpers ========= */
 
@@ -174,6 +176,28 @@ const TEMPLATE_SIZES: Record<TemplateKind, { w: number; h: number }> = {
 };
 
 export default function WriterPage() {
+    const router = useRouter();
+    // at the top of WriterPage(), right after const router = useRouter();
+useEffect(() => {
+  const supabase = createClient();
+
+  supabase.auth.getSession().then(({ data, error }) => {
+    console.log('writer.getSession error:', error);
+    console.log('writer.session:', data?.session);
+  });
+
+  supabase.auth.getUser().then(({ data, error }) => {
+    console.log('writer.getUser error:', error);
+    console.log('writer.user id:', data?.user?.id);
+  });
+
+  const { data: sub } = supabase.auth.onAuthStateChange((_evt, sess) => {
+    console.log('auth change -> session:', sess);
+  });
+  return () => sub.subscription.unsubscribe();
+}, []);
+
+
   /* ----- Writer state ----- */
   const [input, setInput] = useState("");
   const [type, setType] = useState<"donor_report" | "newsletter" | "thank_you" | "student_story">("donor_report");
@@ -239,12 +263,13 @@ export default function WriterPage() {
 
   /* ----- Export PNG (prefer real <canvas>) ----- */
 /* ----- Export PNG (exact canvas size) ----- */
+/* ----- Export PNG (exact template size, no extra whitespace) ----- */
 const exportPNG = async () => {
   try {
     const host = previewRef.current;
     if (!host) return;
 
-    // Find the <canvas> inside your EditorCanvas
+    // 1) Prefer a real <canvas> from EditorCanvas (exact pixels)
     const canvases = Array.from(host.querySelectorAll("canvas")) as HTMLCanvasElement[];
     const canvas =
       canvases.length === 0
@@ -256,26 +281,47 @@ const exportPNG = async () => {
           }, canvases[0] || null);
 
     if (canvas) {
-      await nextFrame(); // wait a frame so latest edits are painted
-
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob(
-          (b) => (b ? resolve(b) : reject(new Error("canvas.toBlob returned null"))),
-          "image/png",
-          0.92
-        );
-      });
-
+      await nextFrame(); // ensure last paint
+      const blob = await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas.toBlob returned null"))), "image/png", 0.92)
+      );
       saveAs(blob, `${type}-${previewLang}.png`);
       return;
     }
 
-    // fallback if no canvas is found (DOM snapshot)
-    const blob2 = await htmlToImage.toBlob(host, {
-      pixelRatio: 2,
+    // 2) DOM fallback: snapshot the hidden, clean ExportStage at exact WxH
+    const node = exportRef.current?.firstElementChild as HTMLElement | null;
+    if (!node) throw new Error("Export node not found");
+
+    const { w, h } = canvasSize;
+
+    // Ensure zero chrome + fixed box
+    node.style.margin = "0";
+    node.style.padding = "0";
+    node.style.border = "0";
+    node.style.boxSizing = "border-box";
+
+    const blob2 = await htmlToImage.toBlob(node, {
+      // Lock the snapshot box to the template size (no extra whitespace)
+      width: w,
+      height: h,
+      canvasWidth: w,
+      canvasHeight: h,
+      pixelRatio: 1,
       cacheBust: true,
-      backgroundColor: "#ffffff",
-      style: { transform: "none", transformOrigin: "top left" } as any,
+      backgroundColor: "#transparent",
+      style: {
+        width: `${w}px`,
+        height: `${h}px`,
+        borderRadius: "24px",          
+        overflow: "hidden",         
+        transform: "none",
+        transformOrigin: "top left",
+        margin: "0",
+        padding: "0",
+        border: "0",
+        boxSizing: "border-box",
+      } as any,
       filter: (el: HTMLElement) => !el.classList?.contains("skip-export"),
     });
     if (!blob2) throw new Error("toBlob returned null");
@@ -285,6 +331,262 @@ const exportPNG = async () => {
     setErrorMsg("Failed to export image.");
   }
 };
+
+
+// small helper
+// function sb() {
+//   return createBrowserClient(
+//     process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY!
+//   );
+// }
+
+// Helper: export current design to a Blob (prefer real <canvas>)
+async function exportDesignBlob(): Promise<Blob> {
+  const host = previewRef.current;
+  if (!host) throw new Error("Nothing to export yet.");
+
+  // 1) Prefer a real canvas from EditorCanvas
+  const canvases = Array.from(host.querySelectorAll("canvas")) as HTMLCanvasElement[];
+  const canvas = canvases.sort((a, b) => b.width * b.height - a.width * a.height)[0];
+
+  if (canvas) {
+    await nextFrame();
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("canvas.toBlob returned null"))), "image/jpeg", 0.9)
+    );
+    return blob;
+  }
+
+  // 2) Fallback: hidden clean DOM stage
+  const node = exportRef.current?.firstElementChild as HTMLElement | null;
+  if (!node) throw new Error("Export node not found");
+  await settle(node);
+
+  const snap = await htmlToImage.toBlob(node, {
+    backgroundColor: "#fff",
+    pixelRatio: 1,
+    cacheBust: true,
+    style: { transform: "none", transformOrigin: "top left" } as any,
+    filter: (el: HTMLElement) => !el.classList?.contains("skip-export"),
+  });
+  if (!snap) throw new Error("Snapshot failed");
+
+  // Normalize to JPEG
+  const bmp = await createImageBitmap(snap);
+  const off = document.createElement("canvas");
+  off.width = bmp.width; off.height = bmp.height;
+  off.getContext("2d")!.drawImage(bmp, 0, 0);
+  const jpeg = await new Promise<Blob>((res, rej) =>
+    off.toBlob((b) => (b ? res(b) : rej(new Error("toBlob null"))), "image/jpeg", 0.9)
+  );
+  return jpeg;
+}
+
+// Single entry point: Save (image when in visual mode, text when in plain mode)
+const saveToDB = async () => {
+  try {
+    const supabase = createClient();
+    const { data: { user }, error: authErr } = await supabase.auth.getUser();
+    if (authErr) throw authErr;
+    if (!user) throw new Error("Please sign in to save.");
+
+    const title = (current as any)?.title || (current as any)?.subject || "Untitled";
+    const caption = (current as any)?.body || (current as any)?.executive_summary || "";
+    const kind = type; // donor_report | newsletter | thank_you | student_story
+    const metadataBase = {
+      kind,
+      template: TEMPLATE_MAP[type],
+      lang: previewLang,
+      owner: user.id,
+      // Save an editable snapshot so you can re-open the design later:
+      editor_snapshot: {
+        layers,
+        themeColor,
+      },
+    };
+
+    // TEXT-ONLY SAVE (Plain mode)
+    if (mode === "plain") {
+      const text = plainText.trim();
+      if (!text) throw new Error("No text to save.");
+      const { error: insErr } = await supabase.from("stories").insert({
+        title,
+        story: text,
+        content_type: "text",
+        content_url: null,
+        metadata: metadataBase,
+      });
+      if (insErr) throw insErr;
+      router.push("/library");
+      return;
+    }
+
+    // IMAGE SAVE (Visual mode): export -> upload -> get URL -> insert row
+    const blob = await exportDesignBlob();
+
+    // 1) Upload to Storage (bucket: stories)
+    const fileName = `${crypto.randomUUID()}.jpg`;
+    const path = `${user.id}/image/${fileName}`;
+    const { error: upErr } = await supabase.storage.from("stories").upload(path, blob, {
+      cacheControl: "3600",
+      contentType: "image/jpeg",
+      upsert: false,
+    });
+    if (upErr) throw upErr;
+
+    // 2) Retrieve URL (choose ONE approach)
+
+    // (A) PUBLIC bucket (simple)
+    const { data: pub, error: urlErr } = supabase.storage.from("stories").getPublicUrl(path);
+    if (urlErr) throw urlErr;
+    const contentUrl = pub.publicUrl; // contains /object/public/stories/...
+
+    // (B) If bucket is PRIVATE, use this instead of (A):
+    // const { data: signed, error: signErr } = await supabase
+    //   .storage.from("stories").createSignedUrl(path, 60 * 60 * 24); // 24h
+    // if (signErr) throw signErr;
+    // const contentUrl = signed.signedUrl;
+
+    // 3) Insert DB row — keep the plain text alongside the image for searchability
+    const { error: insErr } = await supabase.from("stories").insert({
+      title,
+      story: caption || plainText || "",
+      content_type: "image",
+      content_url: contentUrl,
+      metadata: metadataBase,
+    });
+    if (insErr) throw insErr;
+
+    router.push("/library");
+  } catch (e: any) {
+    console.error("[saveToDB] failed", e);
+    setErrorMsg(e.message || "Save failed");
+  }
+};
+
+
+
+// const saveToDB = async () => {
+//   try {
+//     if (mode === "plain") {
+//       // -------- TEXT SAVE --------
+//       if (!plainText.trim()) return setErrorMsg("No text to save.");
+//       const res = await fetch("/api/stories", {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           title: (current as any)?.title || (current as any)?.subject || "Untitled",
+//           story: plainText,
+//           content_type: "text",
+//         }),
+//       });
+//       const json = await res.json();
+//       if (!res.ok) throw new Error(json?.error || "Save text failed");
+//       console.log("✅ Saved text story:", json);
+//     } else if (mode === "visual") {
+//       // -------- IMAGE SAVE --------
+//       const host = previewRef.current;
+//       if (!host) return setErrorMsg("Nothing to save yet.");
+
+//       // Prefer canvas export
+//       const canvases = Array.from(host.querySelectorAll("canvas")) as HTMLCanvasElement[];
+//       const canvas = canvases.sort((a, b) => b.width*b.height - a.width*b.height)[0];
+
+//       let blob: Blob | null = null;
+//       if (canvas) {
+//         await nextFrame();
+//         blob = await new Promise<Blob>((resolve, reject) =>
+//           canvas.toBlob(b => b ? resolve(b) : reject("canvas.toBlob failed"), "image/png", 0.92)
+//         );
+//       } else {
+//         // fallback DOM snapshot
+//         const node = exportRef.current?.firstElementChild as HTMLElement | null;
+//         if (!node) throw new Error("Export node not found");
+//         await settle(node);
+//         blob = await htmlToImage.toBlob(node, { backgroundColor: "#fff" });
+//       }
+//       if (!blob) throw new Error("Export returned null blob");
+
+//       const form = new FormData();
+//       form.set("file", new File([blob], "story.png", { type: "image/png" }));
+//       form.set("title", (current as any)?.title || (current as any)?.subject || "Untitled");
+//       form.set("story", (current as any)?.body || (current as any)?.executive_summary || "");
+//       form.set("content_type", "image");
+
+//       const res = await fetch("/api/stories", { method: "POST", body: form });
+//       const json = await res.json();
+//       if (!res.ok) throw new Error(json?.error || "Save image failed");
+//       console.log("✅ Saved image story:", json);
+//     }
+//   } catch (e: any) {
+//     setErrorMsg(e.message);
+//   }
+// };
+
+  /* ----- Save IMAGE to Supabase (Storage + DB row) ----- */
+  const saveImageToDB = async () => {
+    try {
+      const host = previewRef.current;
+      if (!host) return setErrorMsg("Nothing to save yet.");
+
+      // Prefer canvas export (exact size)
+      const canvases = Array.from(host.querySelectorAll("canvas")) as HTMLCanvasElement[];
+      const canvas = canvases.sort((a, b) => b.width*b.height - a.width*b.height)[0];
+
+      let blob: Blob | null = null;
+      if (canvas) {
+        await nextFrame();
+        blob = await new Promise<Blob>((resolve, reject) =>
+          canvas.toBlob(b => b ? resolve(b) : reject("canvas.toBlob failed"), "image/png", 0.92)
+        );
+      } else {
+        // fallback to DOM snapshot
+        const node = exportRef.current?.firstElementChild as HTMLElement | null;
+        if (!node) throw new Error("Export node not found");
+        await settle(node);
+        blob = await htmlToImage.toBlob(node, { backgroundColor: "#fff" });
+      }
+      if (!blob) throw new Error("Export returned null blob");
+
+      const form = new FormData();
+      form.set("file", new File([blob], "story.png", { type: "image/png" }));
+      form.set("title", (current as any)?.title || (current as any)?.subject || "Untitled");
+      form.set("story", (current as any)?.body || (current as any)?.executive_summary || "");
+      form.set("content_type", "image");
+
+      const res = await fetch("/api/stories", { method: "POST", body: form });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Save failed");
+
+      console.log("✅ Saved image story:", json);
+    } catch (e: any) {
+      setErrorMsg(e.message);
+    }
+  };
+
+  /* ----- Save TEXT to Supabase (DB row only) ----- */
+  const saveTextToDB = async () => {
+    try {
+      if (!plainText.trim()) return setErrorMsg("No text to save.");
+      const res = await fetch("/api/stories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: (current as any)?.title || (current as any)?.subject || "Untitled",
+          story: plainText,
+          content_type: "text",
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Save failed");
+
+      console.log("✅ Saved text story:", json);
+    } catch (e: any) {
+      setErrorMsg(e.message);
+    }
+  };
+
 ;
 
   /* ----- Derived values ----- */
@@ -535,7 +837,7 @@ const exportPNG = async () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Content Writer → Polished + Visual</h1>
+      <h1 className="text-2xl font-semibold">Content Writer</h1>
 
       <div className="grid gap-4">
         {/* Output type */}
@@ -650,9 +952,10 @@ const exportPNG = async () => {
               <Button variant="secondary" onClick={exportPNG}>
                 Export PNG
               </Button>
-              <Button variant="secondary" onClick={() => window.print()}>
-                Print / PDF
-              </Button>
+              <Button variant="secondary" onClick={saveToDB}>
+              Save to DB
+            </Button>
+
             </>
           )}
         </div>
