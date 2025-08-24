@@ -45,8 +45,6 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
           throw error;
         }
         
-        console.error('Fetched images:', data);
-
         setImages(data || []);
       } catch (err) {
         setError('Failed to load images');
