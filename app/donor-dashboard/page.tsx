@@ -58,15 +58,16 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
     fetchImages();
   }, []);
 
-  const formatDate = (dateString:string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (dateInput: string | number | Date): string => {
+    const date = new Date(dateInput);
+    if (Number.isNaN(date.getTime())) return 'Invalid date';
+
+    return new Intl.DateTimeFormat('en-HK', {
+      timeZone: 'Asia/Hong_Kong',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    }).format(date);
   };
 
   const openModal = (image: StoryImage, index: number): void => {
@@ -132,7 +133,7 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Poster Gallery</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Gallery</h1>
           <p className="text-gray-600 mt-2">{images.length} posters available</p>
         </div>
       </div>
@@ -170,7 +171,7 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
                               <div className="w-full bg-white bg-opacity-95 backdrop-blur-sm p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                                 <div className="flex items-center text-gray-700 text-sm">
                                   <Calendar size={16} className="mr-2" />
-                                  <span>{formatDate(image.created_at)}</span>
+                                  <span>Published at {formatDate(image.created_at)}</span>
                                 </div>
                               </div>
                             </div>
