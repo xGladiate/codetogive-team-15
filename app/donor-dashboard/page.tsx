@@ -1,18 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Calendar, MapPin, Heart } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+import { Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import DonationButton from "@/components/make-a-donation-button";
-import Image from "next/image";
+import StoriesCarousel from "@/components/stories/StoriesCarousel";
 
 // TypeScript interfaces
 interface Story {
@@ -135,41 +127,6 @@ const DonorStoriesPage: React.FC = () => {
     fetchData();
   }, []);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-HK", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const getSchoolName = (schoolId: number | null): string => {
-    if (!schoolId) return "General Story";
-    const school = schools.find((s) => s.id === schoolId);
-    return school ? `${school.name}, ${school.neighborhood}` : "Unknown School";
-  };
-
-  const getImageUrl = (contentUrl: string | null): string | null => {
-    if (!contentUrl) return null;
-    if (/^https?:\/\//i.test(contentUrl)) return contentUrl;
-
-    const supabase = createClient();
-    return (
-      supabase.storage.from("stories").getPublicUrl(contentUrl).data
-        .publicUrl ?? null
-    );
-  };
-
-  const truncateText = (
-    text: string | null,
-    maxLength: number = 150
-  ): string => {
-    if (!text) return "";
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength).trim() + "...";
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
@@ -254,107 +211,11 @@ const DonorStoriesPage: React.FC = () => {
           </div>
         ) : (
           <div>
-            <Carousel
-              opts={{
-                align: "start",
-                loop: true,
-              }}
-              className="w-full"
-            >
-              <CarouselContent className="-ml-2 md:-ml-4">
-                {stories.map((story) => {
-                  const imageUrl =
-                    story.content_type === "image"
-                      ? getImageUrl(story.content_url)
-                      : null;
-
-                  return (
-                    <CarouselItem
-                      key={story.id}
-                      className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3"
-                    >
-                      <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-lg">
-                        <CardContent className="p-0">
-                          <div className="relative">
-                            {/* Header with metadata */}
-                            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent p-4">
-                              <div className="flex items-center text-white text-sm">
-                                <Calendar size={14} className="mr-2" />
-                                <span>{formatDate(story.created_at)}</span>
-                              </div>
-                            </div>
-
-                            {/* Image or placeholder */}
-                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 relative">
-                              {imageUrl ? (
-                                <Image
-                                  src={imageUrl}
-                                  alt={story.title || "Story image"}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                  fill
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <div className="text-center">
-                                    <Heart
-                                      size={48}
-                                      className="mx-auto text-blue-400 mb-2"
-                                    />
-                                    <p className="text-blue-600 font-medium">
-                                      Story Content
-                                    </p>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="p-6">
-                            {/* Title */}
-                            <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
-                              {story.title || "Untitled Story"}
-                            </h3>
-
-                            {/* School info */}
-                            {story.school_id && (
-                              <div className="flex items-center text-blue-600 mb-4">
-                                <MapPin
-                                  size={16}
-                                  className="mr-2 flex-shrink-0"
-                                />
-                                <span className="text-sm font-medium truncate">
-                                  {getSchoolName(story.school_id)}
-                                </span>
-                              </div>
-                            )}
-
-                            {/* Story content */}
-                            <div className="text-gray-700 text-sm leading-relaxed mb-4">
-                              <p className="whitespace-pre-wrap">
-                                {truncateText(story.story)}
-                              </p>
-                            </div>
-
-                            {/* Category badge */}
-                            {story.metadata?.kind && (
-                              <div className="flex justify-end">
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                                  {story.metadata.kind.replace("_", " ")}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </CarouselItem>
-                  );
-                })}
-              </CarouselContent>
-              <CarouselPrevious className="left-2" />
-              <CarouselNext className="right-2" />
-            </Carousel>
+            <StoriesCarousel
+              stories={stories}
+              schools={schools}
+              showHeader={false}
+            />
 
             {/* Call to action */}
             <div className="text-center mt-12">
