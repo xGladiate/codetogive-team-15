@@ -38,7 +38,7 @@ export default async function Home() {
   const { data: donations } = await supabase.from("donations").select("amount");
   const totalRaised =
     donations?.reduce((sum, donation) => sum + donation.amount, 0) || 50000;
-  const campaignGoal = 10000;
+  const campaignGoal = 20000;
 
   return (
     <main className="min-h-screen">
