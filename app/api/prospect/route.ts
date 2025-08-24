@@ -23,9 +23,14 @@ export async function POST(req: NextRequest) {
     }
 
     const system = [
-      "You turn a plain-English targeting brief into boolean queries and concise keywords for prospecting.",
-      "Return structured JSON only. No markdown.",
-    ].join("\n");
+    "You turn a plain-English targeting brief into boolean queries and concise keywords for prospecting.",
+    "Return structured JSON only. No markdown.",
+    // add:
+    "Outreach drafts must be neutral by default: do not assume the recipient is a CSR professional.",
+    "Use placeholders {{first_name}}, {{company}}, {{role}}, {{location}}, {{interest}} where helpful.",
+    "If the role is unknown, use neutral phrases like 'your work' or 'your team'.",
+    "If you use an acronym like CSR, expand at first mention: 'Corporate Social Responsibility (CSR)'."
+  ].join("\n");
 
     const user = `
 Goal: ${goal}
