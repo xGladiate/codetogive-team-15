@@ -24,5 +24,11 @@ export default async function ManagementPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  return <ManagementLayout packages={packages || []} />;
+  // Fetch all schools
+  const { data: schools } = await supabase
+    .from("schools")
+    .select("*")
+    .order("name", { ascending: true });
+
+  return <ManagementLayout packages={packages || []} schools={schools || []} />;
 }

@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Package } from "@/types/database";
+import { Package, School } from "@/types/database";
 import PackageManagement from "@/components/packages/PackageManagement";
+import SchoolManagement from "@/components/schools/SchoolManagement";
 
 interface Props {
   packages: Package[];
+  schools: School[];
 }
 
 type ManagementTab = "packages" | "schools" | "stories";
 
-export default function ManagementLayout({ packages }: Props) {
+export default function ManagementLayout({ packages, schools }: Props) {
   const [activeTab, setActiveTab] = useState<ManagementTab>("packages");
 
   const TabButton = ({
@@ -38,15 +40,6 @@ export default function ManagementLayout({ packages }: Props) {
       </Button>
     );
   };
-
-  const SchoolManagement = () => (
-    <div className="flex items-center justify-center h-64 text-gray-500">
-      <div className="text-center">
-        <h3 className="text-lg font-medium mb-2">School Management</h3>
-        <p>Coming soon...</p>
-      </div>
-    </div>
-  );
 
   const StoryManagement = () => (
     <div className="flex items-center justify-center h-64 text-gray-500">
@@ -86,7 +79,7 @@ export default function ManagementLayout({ packages }: Props) {
           {activeTab === "packages" && (
             <PackageManagement packages={packages} />
           )}
-          {activeTab === "schools" && <SchoolManagement />}
+          {activeTab === "schools" && <SchoolManagement schools={schools} />}
           {activeTab === "stories" && <StoryManagement />}
         </div>
       </div>
