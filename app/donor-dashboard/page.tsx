@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 // TypeScript interfaces
 interface StoryImage {
   created_at: string;
+  school_id: number | null;
   poster_url: string;
 }
 
@@ -38,7 +39,7 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
         
         const { data, error } = await supabase
           .from('stories')
-          .select('created_at, poster_url')
+          .select('created_at, school_id, poster_url')
           .order('created_at', { ascending: false });
         
         if (error) {
@@ -57,7 +58,7 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
     fetchImages();
   }, []);
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString:string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
@@ -190,42 +191,44 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
       {/* Modal */}
       {selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-          <div className="relative max-w-4xl max-h-full flex flex-col items-center">
+          <div className="relative w-full h-full flex flex-col items-center">
             {/* Close Button */}
             <button
               onClick={closeModal}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 z-10"
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-20 bg-black bg-opacity-50 rounded-full p-2"
               type="button"
               aria-label="Close modal"
             >
-              <X size={32} />
+              <X size={24} />
             </button>
 
-            {/* Image */}
-            <div className="relative max-w-full max-h-[80vh] flex items-center justify-center">
-              <img
-                src={selectedImage.poster_url}
-                alt={`Poster from ${formatDate(selectedImage.created_at)}`}
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-              />
+            {/* Scrollable Image Container */}
+            <div className="flex-1 w-full overflow-auto flex items-start justify-center pt-16 pb-20">
+              <div className="flex flex-col items-center min-h-full justify-center">
+                <img
+                  src={selectedImage.poster_url}
+                  alt={`Poster from ${formatDate(selectedImage.created_at)}`}
+                  className="max-w-full h-auto object-contain rounded-lg shadow-2xl"
+                  style={{ minHeight: '100vh' }} // Ensure image is tall enough to scroll
+                />
+              </div>
             </div>
 
-            {/* Date Info */}
-            <div className="mt-4 text-white text-center bg-black bg-opacity-50 px-4 py-2 rounded-lg">
+            {/* Fixed Date Info at Bottom */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-center bg-black bg-opacity-70 px-4 py-2 rounded-lg z-20">
               <div className="flex items-center justify-center">
                 <Calendar size={18} className="mr-2" />
                 <span className="text-lg font-medium">
                   {formatDate(selectedImage.created_at)}
                 </span>
               </div>
+              {/* Image Counter */}
+              {images.length > 1 && (
+                <div className="mt-1 text-white text-sm">
+                  {currentIndex + 1} of {images.length}
+                </div>
+              )}
             </div>
-
-            {/* Image Counter */}
-            {images.length > 1 && (
-              <div className="mt-2 text-white text-sm bg-black bg-opacity-50 px-3 py-1 rounded-full">
-                {currentIndex + 1} of {images.length}
-              </div>
-            )}
           </div>
         </div>
       )}
