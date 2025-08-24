@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { Badge, Donation, UserBadges } from "@/types/database";
+import { Badge, Donation } from "@/types/database";
 
 export type RuleType = "donation_count" | "distinct_schools" | "streak_days" | "total_amount";
 
