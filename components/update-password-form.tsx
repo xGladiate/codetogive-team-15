@@ -31,10 +31,34 @@ export function UpdatePasswordForm({
     setError(null);
 
     try {
+      // Update password
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
+
+      // Get current user id
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError || !user) throw userError ?? new Error("No user found");
+
+      // Fetch role from users table
+      const { data: userRow, error: roleError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      if (roleError || !userRow) throw roleError ?? new Error("User role not found");
+
+      // Redirect based on role
+      if (userRow.role === "donor") {
+        router.push("/donor");
+      } else if (userRow.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/"); // fallback route
+      }
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
