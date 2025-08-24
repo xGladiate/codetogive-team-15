@@ -23,7 +23,7 @@ REACH CONNECT is a comprehensive donor engagement web application built for Proj
 - **Gamified Engagement**: Achievement system and milestone tracking to encourage continued giving
 - **Streamlined Operations**: Easy package management and school administration tools
 
-Built for the **Morgan Stanley Code for Good Hackathon 2024** in partnership with **Project REACH Hong Kong**.
+Built for the **Morgan Stanley Code to Give Hackathon 2025** in partnership with **Project REACH Hong Kong**.
 
 ## 🚀 Quick Start
 
@@ -75,8 +75,8 @@ Built for the **Morgan Stanley Code for Good Hackathon 2024** in partnership wit
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **UI Components**: shadcn/ui, Radix UI primitives  
+- **Frontend**: Next.js 15, React, TypeScript, Tailwind CSS
+- **UI Components**: shadcn/ui, Radix UI primitives
 - **Backend**: Supabase (PostgreSQL, Auth, Storage, Real-time)
 - **Payments**: Stripe API integration with receipt automation
 - **AI/ML**: OpenAI GPT-4 for content generation and prospect research
@@ -88,7 +88,7 @@ Built for the **Morgan Stanley Code for Good Hackathon 2024** in partnership wit
 ## ✨ Key Features
 
 ### For Donors 🎁
-- **Flexible Donation Packages**: From individual student support ($50/month) to full school sponsorship ($2000+)
+- **Flexible Donation Packages**: From individual student support (HK$100/month) to full school sponsorship (HK$1,500,000)
 - **Real-time Impact Dashboard**: Live charts showing funding progress and outcomes across schools
 - **Achievement System**: Gamified badges for donation milestones and engagement levels
 - **Personal Story Feed**: Curated stories from schools and students they've supported
@@ -115,7 +115,8 @@ Built for the **Morgan Stanley Code for Good Hackathon 2024** in partnership wit
 ## 🔧 Implementation Highlights
 
 ### Smart Badge System
-Our achievement system uses efficient SQL aggregations to evaluate donation patterns in real-time:
+Our achievement system uses efficient SQL aggregations to evaluate donation patterns in real-time,
+ensuring you get the most up to date data without severe performance impact.
 
 ```typescript
 // Real-time badge evaluation without performance impact
@@ -123,7 +124,7 @@ const newBadges = await recomputeAndPersistUserBadges(userId);
 ```
 
 ### AI-Powered Content Pipeline
-- **Prospect Research**: Uses OpenAI to analyze LinkedIn profiles and generate targeted outreach
+- **Prospect Research**: Uses OpenAI to analyze public profiles on the web and generate targeted outreach
 - **Story Generation**: Automated impact stories with anonymization options
 - **Visual Content**: Template-based poster and newsletter creation with export capabilities
 
@@ -158,22 +159,16 @@ The application is deployed with enterprise-grade infrastructure:
 
 ## 🏆 Team
 
-Built with ❤️ by Team 15 for Morgan Stanley Code for Good 2024:
+Built with ❤️ by Team 15 for Morgan Stanley Code to Give 2025:
 
-- **Benedict** - Full-stack development, Payment integration, UI/UX design
+- **Benedict** - Full-stack development, Code Quality, Database Management, UI/UX design
 - **Weijie** - Data visualization, Heat maps, Analytics dashboard  
 - **Yiming** - Payment processing, Receipt automation, Backend architecture
 - **Sharon** - Story management, Content curation, User experience
-- **Felicia** - User profiles, Donor journey optimization
+- **Felicia** - User profiles, Donor journey optimization, Payment integration
 - **Haoyu** - Admin tools, School management, Projected funding
 - **Tricia** - AI integration, Outreach automation, Content generation
 
-## 🌐 API Documentation
-
-### Key Routes
-- `/api/generate` - AI content generation endpoint
-- `/api/receipt` - PDF receipt generation and email delivery
-- `/api/stories` - Story management and retrieval
 
 ### Database Schema
 Our Supabase schema includes optimized tables for:
@@ -199,7 +194,7 @@ Our Supabase schema includes optimized tables for:
 
 ## 📄 License
 
-This project was developed for the Morgan Stanley Code for Good Hackathon in partnership with Project REACH Hong Kong. 
+This project was developed for the Morgan Stanley Code to Give Hackathon 2025 in partnership with Project REACH Hong Kong. 
 
 ## 🙏 Acknowledgments
 
