@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     const baseSite =
       mode === "company" ? "site:linkedin.com/company" : "site:linkedin.com/in";
     const interestBlock =
-      interests?.length ? `(${interests.map((i) => `"${i}"`).join(" OR ")})` : "";
+      interests?.length ? `(${interests.map((i:string) => `"${i}"`).join(" OR ")})` : "";
     const probes = `("about" OR "interests" OR "posts" OR "featured")`;
 
     const queries = [
