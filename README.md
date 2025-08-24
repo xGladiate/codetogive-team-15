@@ -6,9 +6,9 @@ REACH CONNECT is a comprehensive donor engagement web application built for Proj
 
 ## 🌟 Demo
 
-**Live Demo:** [Project REACH Platform](your-vercel-url-here)
+**Live Demo:** [Project REACH Platform](https://codetogive-team-15-m282lfhon-sharons-projects-0242dc1a.vercel.app/)
 
-![Project REACH Demo](demo-screenshot.png)
+[Project REACH Demo](demo-screenshot.png)
 
 *Experience the donation flow, impact dashboard, and AI-powered story generation in action*
 
@@ -210,5 +210,5 @@ Special thanks to:
 
 ## 🔗 Links
 
-- [Live Demo](your-vercel-url-here)
+- [Live Demo](https://codetogive-team-15-m282lfhon-sharons-projects-0242dc1a.vercel.app/)
 - [Project REACH Website](https://reach.org.hk)
