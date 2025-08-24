@@ -1,23 +1,36 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { X, Calendar, Router } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import React, { useState, useEffect } from "react";
+import { Calendar, MapPin, Heart } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
-} from '@/components/ui/carousel';
-import { createClient } from '@/lib/supabase/client';
-import DonationButton from '@/components/make-a-donation-button';
+} from "@/components/ui/carousel";
+import { createClient } from "@/lib/supabase/client";
+import DonationButton from "@/components/make-a-donation-button";
+import Image from "next/image";
 
 // TypeScript interfaces
-interface StoryImage {
+interface Story {
+  id: number;
   created_at: string;
+  title: string | null;
+  story: string | null;
   school_id: number | null;
-  poster_url: string;
+  content_type: "text" | "image" | "video";
+  content_url: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: any;
+}
+
+interface School {
+  id: number;
+  name: string;
+  neighborhood: string;
 }
 
 interface Donation {
@@ -25,144 +38,144 @@ interface Donation {
   school_id: number | null;
 }
 
-interface PosterGalleryProps {
-  // Add any props you might need
-}
-
-const PosterGallery: React.FC<PosterGalleryProps> = () => {
-  const [images, setImages] = useState<StoryImage[]>([]);
+const DonorStoriesPage: React.FC = () => {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<StoryImage | null>(null);
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [showDonationMessage, setShowDonationMessage] = useState<boolean>(false);
+  const [showDonationMessage, setShowDonationMessage] =
+    useState<boolean>(false);
 
   useEffect(() => {
-    const fetchImages = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
         setShowDonationMessage(false);
-        
+
         const supabase = createClient();
-        
+
         // Get current authenticated user
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
+        const {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
         if (authError || !user) {
-          throw new Error('User not authenticated');
+          throw new Error("User not authenticated");
         }
-        
+
         // Check user's donations
         const { data: donations, error: donationsError } = await supabase
-          .from('donations')
-          .select('donor_id, school_id')
-          .eq('donor_id', user.id);
-        
-
-console.log("donations:", donations);
-console.log("donationsError:", donationsError);
+          .from("donations")
+          .select("donor_id, school_id")
+          .eq("donor_id", user.id);
 
         if (donationsError) {
           throw donationsError;
         }
-        
+
         // If no donations found, show donation message
         if (!donations || donations.length === 0) {
           setShowDonationMessage(true);
-          setImages([]);
+          setStories([]);
           return;
         }
-        
+
+        // Fetch schools data
+        const { data: schoolsData, error: schoolsError } = await supabase
+          .from("schools")
+          .select("id, name, neighborhood");
+
+        if (schoolsError) {
+          console.error("Error fetching schools:", schoolsError);
+        } else {
+          setSchools(schoolsData || []);
+        }
+
         // Check if user has donated to all schools (null present)
-        const hasNullSchool = donations.some((donation: Donation) => donation.school_id === null);
-        
+        const hasNullSchool = donations.some(
+          (donation: Donation) => donation.school_id === null
+        );
+
         let storiesQuery = supabase
-          .from('stories')
-          .select('created_at, school_id, poster_url')
-          .order('created_at', { ascending: false });
-        
+          .from("stories")
+          .select("*")
+          .order("created_at", { ascending: false });
+
         if (!hasNullSchool) {
           // Filter stories to only schools the user has donated to
           const donatedSchoolIds = donations
             .map((donation: Donation) => donation.school_id)
-            .filter((id): id is number => id !== null); // Remove nulls and assert type
-          
+            .filter((id): id is number => id !== null);
+
           if (donatedSchoolIds.length > 0) {
-            storiesQuery = storiesQuery.in('school_id', donatedSchoolIds);
+            storiesQuery = storiesQuery.in("school_id", donatedSchoolIds);
           } else {
-            // No valid school IDs, show empty
-            setImages([]);
+            setStories([]);
             return;
           }
         }
-        // If hasNullSchool is true, we show all stories (no additional filter)
-        
-        const { data: stories, error: storiesError } = await storiesQuery;
-        
+
+        const { data: storiesData, error: storiesError } = await storiesQuery;
+
         if (storiesError) {
           throw storiesError;
         }
-        
-        setImages(stories || []);
-        
+
+        setStories(storiesData || []);
       } catch (err) {
-        setError('Failed to load images');
-        console.error('Error fetching images:', err);
+        setError("Failed to load stories");
+        console.error("Error fetching data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchImages();
+    fetchData();
   }, []);
 
-  const formatDate = (dateString: string | number | Date) => {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-HK', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString("en-HK", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
-  const openModal = (image: StoryImage, index: number): void => {
-    setSelectedImage(image);
-    setCurrentIndex(index);
+  const getSchoolName = (schoolId: number | null): string => {
+    if (!schoolId) return "General Story";
+    const school = schools.find((s) => s.id === schoolId);
+    return school ? `${school.name}, ${school.neighborhood}` : "Unknown School";
   };
 
-  const closeModal = (): void => {
-    setSelectedImage(null);
+  const getImageUrl = (contentUrl: string | null): string | null => {
+    if (!contentUrl) return null;
+    if (/^https?:\/\//i.test(contentUrl)) return contentUrl;
+
+    const supabase = createClient();
+    return (
+      supabase.storage.from("stories").getPublicUrl(contentUrl).data
+        .publicUrl ?? null
+    );
   };
 
-  const navigateModal = (direction: 'next' | 'prev'): void => {
-    const newIndex = direction === 'next' 
-      ? (currentIndex + 1) % images.length 
-      : (currentIndex - 1 + images.length) % images.length;
-    
-    setCurrentIndex(newIndex);
-    setSelectedImage(images[newIndex]);
+  const truncateText = (
+    text: string | null,
+    maxLength: number = 150
+  ): string => {
+    if (!text) return "";
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength).trim() + "...";
   };
-
-  const handleKeyPress = (e: KeyboardEvent): void => {
-    if (selectedImage) {
-      if (e.key === 'Escape') closeModal();
-      if (e.key === 'ArrowLeft') navigateModal('prev');
-      if (e.key === 'ArrowRight') navigateModal('next');
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [selectedImage, currentIndex, images]); // Added 'images' to dependencies
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading gallery...</p>
+          <p className="text-gray-600 text-lg">Loading inspiring stories...</p>
         </div>
       </div>
     );
@@ -170,11 +183,11 @@ console.log("donationsError:", donationsError);
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-lg shadow-lg">
           <p className="text-red-600 text-lg font-medium">{error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             Try Again
@@ -185,129 +198,182 @@ console.log("donationsError:", donationsError);
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Stories</h1>
-          <p className="text-gray-600 mt-2">{images.length} Stories Updates</p>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              Stories of Impact
+            </h1>
+            <p className="text-xl text-gray-600">
+              See how your donations are making a difference
+            </p>
+            <div className="flex items-center justify-center mt-4 text-lg text-blue-600">
+              <Heart className="h-5 w-5 mr-2 fill-current" />
+              <span>{stories.length} inspiring stories</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Gallery Carousel */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Stories Content */}
+      <div className="max-w-7xl mx-auto px-4 py-12">
         {showDonationMessage ? (
           <div className="text-center py-12">
-            <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
-              <div className="mb-4">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Calendar size={32} className="text-blue-600" />
+            <div className="bg-white rounded-2xl shadow-xl p-10 max-w-lg mx-auto">
+              <div className="mb-6">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Heart size={40} className="text-white fill-current" />
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Start Your Journey
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                Start Your Impact Journey
               </h3>
-              <p className="text-gray-600 mb-6">
-                Make your first donation to unlock and view inspiring stories from the schools and communities you support.
+              <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                Make your first donation to unlock inspiring stories from the
+                schools and communities you support. Every contribution creates
+                a story worth sharing.
               </p>
               <DonationButton size="lg" />
             </div>
           </div>
-        ) : images.length === 0 ? (
+        ) : stories.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No stories available from your donated schools.</p>
+            <div className="bg-white rounded-2xl shadow-xl p-10 max-w-lg mx-auto">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Heart size={40} className="text-gray-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                No Stories Yet
+              </h3>
+              <p className="text-gray-600 text-lg">
+                Stories from your supported schools will appear here soon.
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="flex justify-center">
-            <Carousel className="w-full max-w-sm md:max-w-md lg:max-w-lg">
-              <CarouselContent>
-                {images.map((image, index) => (
-                  <CarouselItem key={`${image.created_at}-${index}`}>
-                    <div className="p-2">
-                      <Card className="overflow-hidden">
+          <div>
+            <Carousel
+              opts={{
+                align: "start",
+                loop: true,
+              }}
+              className="w-full"
+            >
+              <CarouselContent className="-ml-2 md:-ml-4">
+                {stories.map((story) => {
+                  const imageUrl =
+                    story.content_type === "image"
+                      ? getImageUrl(story.content_url)
+                      : null;
+
+                  return (
+                    <CarouselItem
+                      key={story.id}
+                      className="pl-2 md:pl-4 md:basis-1/2 lg:basis-1/3"
+                    >
+                      <Card className="h-full overflow-hidden hover:shadow-xl transition-all duration-300 bg-white border-0 shadow-lg">
                         <CardContent className="p-0">
-                          <div 
-                            className="group relative cursor-pointer"
-                            onClick={() => openModal(image, index)}
-                          >
-                            <div className="aspect-[840/1188] overflow-hidden">
-                              <img
-                                src={image.poster_url}
-                                alt={`Poster from ${formatDate(image.created_at)}`}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            </div>
-                            
-                            {/* Image Info Overlay */}
-                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-end">
-                              <div className="w-full bg-white bg-opacity-95 backdrop-blur-sm p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                                <div className="flex items-center text-gray-700 text-sm">
-                                  <Calendar size={16} className="mr-2" />
-                                  <span>Published at {formatDate(image.created_at)}</span>
-                                </div>
+                          <div className="relative">
+                            {/* Header with metadata */}
+                            <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent p-4">
+                              <div className="flex items-center text-white text-sm">
+                                <Calendar size={14} className="mr-2" />
+                                <span>{formatDate(story.created_at)}</span>
                               </div>
                             </div>
+
+                            {/* Image or placeholder */}
+                            <div className="aspect-[4/3] overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 relative">
+                              {imageUrl ? (
+                                <Image
+                                  src={imageUrl}
+                                  alt={story.title || "Story image"}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                  fill
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <div className="text-center">
+                                    <Heart
+                                      size={48}
+                                      className="mx-auto text-blue-400 mb-2"
+                                    />
+                                    <p className="text-blue-600 font-medium">
+                                      Story Content
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-6">
+                            {/* Title */}
+                            <h3 className="text-xl font-bold text-gray-900 mb-3 line-clamp-2">
+                              {story.title || "Untitled Story"}
+                            </h3>
+
+                            {/* School info */}
+                            {story.school_id && (
+                              <div className="flex items-center text-blue-600 mb-4">
+                                <MapPin
+                                  size={16}
+                                  className="mr-2 flex-shrink-0"
+                                />
+                                <span className="text-sm font-medium truncate">
+                                  {getSchoolName(story.school_id)}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Story content */}
+                            <div className="text-gray-700 text-sm leading-relaxed mb-4">
+                              <p className="whitespace-pre-wrap">
+                                {truncateText(story.story)}
+                              </p>
+                            </div>
+
+                            {/* Category badge */}
+                            {story.metadata?.kind && (
+                              <div className="flex justify-end">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                                  {story.metadata.kind.replace("_", " ")}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
-                    </div>
-                  </CarouselItem>
-                ))}
+                    </CarouselItem>
+                  );
+                })}
               </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
+              <CarouselPrevious className="left-2" />
+              <CarouselNext className="right-2" />
             </Carousel>
+
+            {/* Call to action */}
+            <div className="text-center mt-12">
+              <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">
+                  Inspired by These Stories?
+                </h3>
+                <p className="text-gray-600 mb-6 text-lg">
+                  Your continued support helps create more stories like these.
+                  Every donation makes a lasting impact.
+                </p>
+                <DonationButton size="lg" />
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
-          <div className="relative w-full h-full flex flex-col items-center">
-            {/* Close Button */}
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-20 bg-black bg-opacity-50 rounded-full p-2"
-              type="button"
-              aria-label="Close modal"
-            >
-              <X size={24} />
-            </button>
-
-            {/* Scrollable Image Container */}
-            <div className="flex-1 w-full overflow-auto flex items-start justify-center pt-16 pb-20">
-              <div className="flex flex-col items-center min-h-full justify-center">
-                <img
-                  src={selectedImage.poster_url}
-                  alt={`Poster from ${formatDate(selectedImage.created_at)}`}
-                  className="max-w-full h-auto object-contain rounded-lg shadow-2xl"
-                  style={{ minHeight: '100vh' }} // Ensure image is tall enough to scroll
-                />
-              </div>
-            </div>
-
-            {/* Fixed Date Info at Bottom */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-center bg-black bg-opacity-70 px-4 py-2 rounded-lg z-20">
-              <div className="flex items-center justify-center">
-                <Calendar size={18} className="mr-2" />
-                <span className="text-lg font-medium">
-                  {formatDate(selectedImage.created_at)}
-                </span>
-              </div>
-              {/* Image Counter */}
-              {images.length > 1 && (
-                <div className="mt-1 text-white text-sm">
-                  {currentIndex + 1} of {images.length}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-export default PosterGallery;
+export default DonorStoriesPage;
