@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import {
   Card,
@@ -22,20 +24,8 @@ import {
 } from "recharts";
 import { TrendingUp, DollarSign, Users, Target, Calendar } from "lucide-react";
 
-const monthlyData = [
-  { month: "Jan", donations: 45000, projected: 50000 },
-  { month: "Feb", donations: 52000, projected: 55000 },
-  { month: "Mar", donations: 48000, projected: 52000 },
-  { month: "Apr", donations: 61000, projected: 58000 },
-  { month: "May", donations: 55000, projected: 60000 },
-  { month: "Jun", donations: 67000, projected: 65000 },
-];
-
-const donorTypeData = [
-  { name: "Individual", value: 65, color: "hsl(160 84% 39%)" },
-  { name: "Corporate", value: 25, color: "hsl(160 60% 60%)" },
-  { name: "Foundation", value: 10, color: "hsl(160 40% 80%)" },
-];
+type MonthlyData = { month: string; donations: number; projected: number };
+type DonorTypeData = { name: string; value: number; color: string };
 
 const upcomingEvents = [
   { name: "Annual Gala", date: "Dec 15, 2024", projected: "$125,000" },
@@ -44,6 +34,122 @@ const upcomingEvents = [
 ];
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<{
+    totalDonations: number;
+    activeDonors: number;
+    avgDonation: number;
+    monthlyData: MonthlyData[];
+    donorTypeData: DonorTypeData[];
+  }>({
+    totalDonations: 0,
+    activeDonors: 0,
+    avgDonation: 0,
+    monthlyData: [],
+    donorTypeData: [],
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const fetchStats = async () => {
+      setLoading(true);
+
+      // Fetch all donations
+      const { data: donations, error } = await supabase
+        .from("donations")
+        .select("amount, donor_id, created_at, type");
+
+      if (error) {
+        console.error("Error fetching donations:", error);
+        setLoading(false);
+        return;
+      }
+
+      const monthOrder = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ];
+
+
+      // Total Donations & Average
+      const amounts = donations.map((d) => parseFloat(d.amount));
+      const totalDonations = amounts.reduce((a, b) => a + b, 0);
+      const avgDonation =
+        amounts.length > 0 ? totalDonations / amounts.length : 0;
+
+      // Active Donors
+      const uniqueDonors = new Set(donations.map((d) => d.donor_id));
+      const activeDonors = uniqueDonors.size;
+
+      // Monthly Donations
+      const monthlyMap: Record<string, number> = {};
+      donations.forEach((d) => {
+        const date = new Date(d.created_at);
+        const month = date.toLocaleString("default", { month: "short" });
+        monthlyMap[month] = (monthlyMap[month] || 0) + parseFloat(d.amount);
+      });
+      const monthlyData = Object.keys(monthlyMap).map((month) => ({
+        month,
+        donations: Math.round(monthlyMap[month]),
+        projected: Math.round(monthlyMap[month] * 1.1), // Example projection
+      })).sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
+
+      // Donor Type Distribution
+      const typeMap: Record<string, number> = {};
+      donations.forEach((d) => {
+        typeMap[d.type] = (typeMap[d.type] || 0) + 1;
+      });
+      const colors = [
+        "hsl(160 84% 39%)",
+        "hsl(160 60% 60%)",
+        "hsl(160 40% 80%)",
+      ];
+      const donorTypeData = Object.keys(typeMap).map((type, index) => ({
+        name: type,
+        value: typeMap[type],
+        color: colors[index % colors.length],
+      }));
+
+      setStats({
+        totalDonations,
+        activeDonors,
+        avgDonation,
+        monthlyData,
+        donorTypeData,
+      });
+
+      setLoading(false);
+    };
+
+    fetchStats();
+
+    const channel = supabase
+      .channel("donations-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "donations" },
+        (payload) => {
+          console.log("Realtime update received:", payload);
+          fetchStats();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="p-6">
+        <p className="text-muted-foreground">Loading dashboard...</p>
+      </main>
+    );
+  }
+
   return (
     <main className="p-6 space-y-6 min-h-screen bg-background">
       {/* Key Metrics */}
@@ -56,9 +162,11 @@ export default function AdminDashboard() {
             <DollarSign className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">$328,000</div>
+            <div className="text-2xl font-bold text-foreground">
+              ${Math.round(stats.totalDonations).toLocaleString()}
+            </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-primary">+12.5%</span> from last month
+              Updated in real time
             </p>
           </CardContent>
         </Card>
@@ -71,10 +179,10 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">1,247</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-primary">+8.2%</span> from last month
-            </p>
+            <div className="text-2xl font-bold text-foreground">
+              {stats.activeDonors}
+            </div>
+            <p className="text-xs text-muted-foreground">Unique donors</p>
           </CardContent>
         </Card>
 
@@ -86,11 +194,16 @@ export default function AdminDashboard() {
             <Target className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">$450,000</div>
+            <div className="text-2xl font-bold text-foreground">
+              ${(Math.round(stats.totalDonations * 1.1).toLocaleString())}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Goal: $500,000 by Dec 2024
+              Goal: ${(Math.round(stats.totalDonations * 1.25).toLocaleString())}
             </p>
-            <Progress value={90} className="mt-2" />
+            <Progress
+              value={(stats.totalDonations / (stats.totalDonations * 1.25)) * 100}
+              className="mt-2"
+            />
           </CardContent>
         </Card>
 
@@ -102,10 +215,10 @@ export default function AdminDashboard() {
             <TrendingUp className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">$263</div>
-            <p className="text-xs text-muted-foreground">
-              <span className="text-primary">+5.1%</span> from last month
-            </p>
+            <div className="text-2xl font-bold text-foreground">
+              ${stats.avgDonation.toFixed(2)}
+            </div>
+            <p className="text-xs text-muted-foreground">Average per donation</p>
           </CardContent>
         </Card>
       </div>
@@ -123,7 +236,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyData}>
+                <BarChart data={stats.monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="month" />
                   <YAxis />
@@ -149,13 +262,13 @@ export default function AdminDashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={donorTypeData}
+                    data={stats.donorTypeData}
                     dataKey="value"
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
                   >
-                    {donorTypeData.map((entry, index) => (
+                    {stats.donorTypeData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} />
                     ))}
                   </Pie>
@@ -166,9 +279,8 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
-
       {/* Upcoming Events */}
-      <Card>
+        <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-primary" />
