@@ -164,7 +164,7 @@ const DonorStoriesPage: React.FC = () => {
               Stories of Impact
             </h1>
             <p className="text-xl text-gray-600">
-              See how your donations are making a difference
+              See how your donations are making a difference!
             </p>
             <div className="flex items-center justify-center mt-4 text-lg text-blue-600">
               <Heart className="h-5 w-5 mr-2 fill-current" />

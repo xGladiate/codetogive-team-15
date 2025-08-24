@@ -128,7 +128,7 @@ export default function Navbar() {
           ) : user ? (
             <>
               {user && <NavButton href="/donor">Donor Profile</NavButton>}
-              <NavButton href="/donor-dashboard">Donor Dashboard</NavButton>
+              <NavButton href="/donor-dashboard">Stories of Impact</NavButton>
               <NavButton href="/donate">Donate</NavButton>
             </>
           ) : (
