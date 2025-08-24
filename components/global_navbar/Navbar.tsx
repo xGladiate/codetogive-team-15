@@ -61,11 +61,12 @@ export default function Navbar() {
             PROJECT REACH
           </Link>
           <div className="flex gap-6 items-center">
-            {/* Loading skeleton */}
+            <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse"></div>
             <div className="h-4 w-16 bg-gray-200 rounded animate-pulse"></div>
           </div>
           <div className="flex gap-3">
-            <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
           </div>
         </div>
       </nav>
@@ -92,7 +93,7 @@ export default function Navbar() {
           <NavigationText label="Home" path="/" />
           {user && userRole === "admin" ? (
             <>
-              <NavigationText label="Admin Page" path="/admin" />
+              <NavigationText label="Admin Dashboard" path="/admin" />
               <NavigationText label="Outreach Tool" path="/outreach" />
               <NavigationText label="Package Management" path="/package" />
             </>

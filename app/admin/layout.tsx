@@ -24,7 +24,6 @@ import {
   Tooltip,
 } from "recharts";
 import { TrendingUp, DollarSign, Users, Target, Calendar } from "lucide-react";
-import NavigationText from "@/components/navigator-text";
 
 const monthlyData = [
   { month: "Jan", donations: 45000, projected: 50000 },
@@ -48,39 +47,50 @@ const upcomingEvents = [
 ];
 
 const schoolsData = [
-  { id: 1, name: "Lincoln Elementary", district: "Central District", students: 450, status: "Active" },
-  { id: 2, name: "Washington High School", district: "North District", students: 1200, status: "Active" },
-  { id: 3, name: "Roosevelt Middle School", district: "South District", students: 680, status: "Active" },
-  { id: 4, name: "Jefferson Academy", district: "East District", students: 320, status: "Inactive" },
+  {
+    id: 1,
+    name: "Lincoln Elementary",
+    district: "Central District",
+    students: 450,
+    status: "Active",
+  },
+  {
+    id: 2,
+    name: "Washington High School",
+    district: "North District",
+    students: 1200,
+    status: "Active",
+  },
+  {
+    id: 3,
+    name: "Roosevelt Middle School",
+    district: "South District",
+    students: 680,
+    status: "Active",
+  },
+  {
+    id: 4,
+    name: "Jefferson Academy",
+    district: "East District",
+    students: 320,
+    status: "Inactive",
+  },
 ];
 
-function ProtectedLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b border-border bg-card">
-        <div className="flex h-16 items-center justify-center px-6 gap-4">
-          <NavigationText
-            className="text-2xl font-bold text-foreground"
-            label="Home"
-            path="/"
-          />
-          <Badge variant="secondary" className="bg-primary/10 text-primary">
-            Live Dashboard
-          </Badge>
-        </div>
-      </header>
-      <main className="p-6 space-y-6">{children}</main>
-    </div>
-  );
-}
-
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"dashboard" | "school">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "school">(
+    "dashboard"
+  );
 
   const [schools, setSchools] = useState(schoolsData);
   const [isAddingSchool, setIsAddingSchool] = useState(false);
   const [editingSchool, setEditingSchool] = useState<any>(null);
-  const [newSchool, setNewSchool] = useState({ name: "", district: "", students: "", status: "Active" });
+  const [newSchool, setNewSchool] = useState({
+    name: "",
+    district: "",
+    students: "",
+    status: "Active",
+  });
 
   const handleAddSchool = () => {
     if (newSchool.name && newSchool.district && newSchool.students) {
@@ -138,13 +148,19 @@ export default function AdminDashboard() {
   };
 
   return (
-    <ProtectedLayout>
+    <main className="p-6 space-y-6 min-h-screen bg-background flex flex-col">
       {/* Tabs */}
       <div className="flex gap-4 mb-6">
-        <Button variant={activeTab === "dashboard" ? "default" : "outline"} onClick={() => setActiveTab("dashboard")}>
+        <Button
+          variant={activeTab === "dashboard" ? "default" : "outline"}
+          onClick={() => setActiveTab("dashboard")}
+        >
           Dashboard
         </Button>
-        <Button variant={activeTab === "school" ? "default" : "outline"} onClick={() => setActiveTab("school")}>
+        <Button
+          variant={activeTab === "school" ? "default" : "outline"}
+          onClick={() => setActiveTab("school")}
+        >
           School Management
         </Button>
       </div>
@@ -156,11 +172,15 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Donations</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Total Donations
+                </CardTitle>
                 <DollarSign className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">$328,000</div>
+                <div className="text-2xl font-bold text-foreground">
+                  $328,000
+                </div>
                 <p className="text-xs text-muted-foreground">
                   <span className="text-primary">+12.5%</span> from last month
                 </p>
@@ -169,7 +189,9 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Donors</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Active Donors
+                </CardTitle>
                 <Users className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
@@ -182,19 +204,27 @@ export default function AdminDashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Projected Funding</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Projected Funding
+                </CardTitle>
                 <Target className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-foreground">$450,000</div>
-                <p className="text-xs text-muted-foreground">Goal: $500,000 by Dec 2024</p>
+                <div className="text-2xl font-bold text-foreground">
+                  $450,000
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Goal: $500,000 by Dec 2024
+                </p>
                 <Progress value={90} className="mt-2" />
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Avg. Donation</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  Avg. Donation
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
@@ -212,7 +242,9 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Monthly Performance</CardTitle>
-                <CardDescription>Actual donations vs projected funding over time</CardDescription>
+                <CardDescription>
+                  Actual donations vs projected funding over time
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
@@ -234,13 +266,21 @@ export default function AdminDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Donor Distribution</CardTitle>
-                <CardDescription>Breakdown of donations by donor type</CardDescription>
+                <CardDescription>
+                  Breakdown of donations by donor type
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-                      <Pie data={donorTypeData} dataKey="value" cx="50%" cy="50%" outerRadius={80}>
+                      <Pie
+                        data={donorTypeData}
+                        dataKey="value"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                      >
                         {donorTypeData.map((entry, index) => (
                           <Cell key={index} fill={entry.color} />
                         ))}
@@ -260,7 +300,9 @@ export default function AdminDashboard() {
                 <Calendar className="h-5 w-5 text-primary" />
                 Upcoming Fundraising Events
               </CardTitle>
-              <CardDescription>Scheduled events and their projected contributions</CardDescription>
+              <CardDescription>
+                Scheduled events and their projected contributions
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -270,11 +312,17 @@ export default function AdminDashboard() {
                     className="flex items-center justify-between p-4 border border-border rounded-lg"
                   >
                     <div>
-                      <h4 className="font-medium text-foreground">{event.name}</h4>
-                      <p className="text-sm text-muted-foreground">{event.date}</p>
+                      <h4 className="font-medium text-foreground">
+                        {event.name}
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        {event.date}
+                      </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-primary">{event.projected}</p>
+                      <p className="font-semibold text-primary">
+                        {event.projected}
+                      </p>
                       <p className="text-xs text-muted-foreground">Projected</p>
                     </div>
                   </div>
@@ -291,10 +339,17 @@ export default function AdminDashboard() {
           {/* School Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-foreground">School Management</h2>
-              <p className="text-muted-foreground">Manage schools in the system</p>
+              <h2 className="text-2xl font-bold text-foreground">
+                School Management
+              </h2>
+              <p className="text-muted-foreground">
+                Manage schools in the system
+              </p>
             </div>
-            <Button onClick={() => setIsAddingSchool(true)} disabled={isAddingSchool || editingSchool}>
+            <Button
+              onClick={() => setIsAddingSchool(true)}
+              disabled={isAddingSchool || editingSchool}
+            >
               Add New School
             </Button>
           </div>
@@ -303,45 +358,63 @@ export default function AdminDashboard() {
           {(isAddingSchool || editingSchool) && (
             <Card>
               <CardHeader>
-                <CardTitle>{editingSchool ? "Edit School" : "Add New School"}</CardTitle>
+                <CardTitle>
+                  {editingSchool ? "Edit School" : "Add New School"}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-foreground">School Name</label>
+                    <label className="text-sm font-medium text-foreground">
+                      School Name
+                    </label>
                     <input
                       type="text"
                       value={newSchool.name}
-                      onChange={(e) => setNewSchool({ ...newSchool, name: e.target.value })}
+                      onChange={(e) =>
+                        setNewSchool({ ...newSchool, name: e.target.value })
+                      }
                       className="w-full mt-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="Enter school name"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">District</label>
+                    <label className="text-sm font-medium text-foreground">
+                      District
+                    </label>
                     <input
                       type="text"
                       value={newSchool.district}
-                      onChange={(e) => setNewSchool({ ...newSchool, district: e.target.value })}
+                      onChange={(e) =>
+                        setNewSchool({ ...newSchool, district: e.target.value })
+                      }
                       className="w-full mt-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="Enter district"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">Number of Students</label>
+                    <label className="text-sm font-medium text-foreground">
+                      Number of Students
+                    </label>
                     <input
                       type="number"
                       value={newSchool.students}
-                      onChange={(e) => setNewSchool({ ...newSchool, students: e.target.value })}
+                      onChange={(e) =>
+                        setNewSchool({ ...newSchool, students: e.target.value })
+                      }
                       className="w-full mt-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                       placeholder="Enter student count"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground">Status</label>
+                    <label className="text-sm font-medium text-foreground">
+                      Status
+                    </label>
                     <select
                       value={newSchool.status}
-                      onChange={(e) => setNewSchool({ ...newSchool, status: e.target.value })}
+                      onChange={(e) =>
+                        setNewSchool({ ...newSchool, status: e.target.value })
+                      }
                       className="w-full mt-1 px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                     >
                       <option value="Active">Active</option>
@@ -350,7 +423,11 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <Button onClick={editingSchool ? handleUpdateSchool : handleAddSchool}>
+                  <Button
+                    onClick={
+                      editingSchool ? handleUpdateSchool : handleAddSchool
+                    }
+                  >
                     {editingSchool ? "Update School" : "Add School"}
                   </Button>
                   <Button variant="outline" onClick={cancelEdit}>
@@ -372,21 +449,46 @@ export default function AdminDashboard() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-3 px-4 font-medium text-foreground">School Name</th>
-                      <th className="text-left py-3 px-4 font-medium text-foreground">District</th>
-                      <th className="text-left py-3 px-4 font-medium text-foreground">Students</th>
-                      <th className="text-left py-3 px-4 font-medium text-foreground">Status</th>
-                      <th className="text-left py-3 px-4 font-medium text-foreground">Actions</th>
+                      <th className="text-left py-3 px-4 font-medium text-foreground">
+                        School Name
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-foreground">
+                        District
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-foreground">
+                        Students
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-foreground">
+                        Status
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-foreground">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {schools.map((school) => (
-                      <tr key={school.id} className="border-b border-border hover:bg-muted/50">
-                        <td className="py-3 px-4 text-foreground">{school.name}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{school.district}</td>
-                        <td className="py-3 px-4 text-muted-foreground">{school.students.toLocaleString()}</td>
+                      <tr
+                        key={school.id}
+                        className="border-b border-border hover:bg-muted/50"
+                      >
+                        <td className="py-3 px-4 text-foreground">
+                          {school.name}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {school.district}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground">
+                          {school.students.toLocaleString()}
+                        </td>
                         <td className="py-3 px-4">
-                          <Badge variant={school.status === "Active" ? "default" : "secondary"}>
+                          <Badge
+                            variant={
+                              school.status === "Active"
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
                             {school.status}
                           </Badge>
                         </td>
@@ -419,6 +521,6 @@ export default function AdminDashboard() {
           </Card>
         </div>
       )}
-    </ProtectedLayout>
+    </main>
   );
 }
