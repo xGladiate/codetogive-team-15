@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { X, Calendar } from 'lucide-react';
+import { X, Calendar, Router } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Carousel,
@@ -11,12 +11,18 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { createClient } from '@/lib/supabase/client';
+import DonationButton from '@/components/make-a-donation-button';
 
 // TypeScript interfaces
 interface StoryImage {
   created_at: string;
   school_id: number | null;
   poster_url: string;
+}
+
+interface Donation {
+  donor_id: string;
+  school_id: number | null;
 }
 
 interface PosterGalleryProps {
@@ -29,24 +35,77 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<StoryImage | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const [showDonationMessage, setShowDonationMessage] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchImages = async () => {
       try {
         setLoading(true);
+        setError(null);
+        setShowDonationMessage(false);
         
-        const supabase = await createClient();
+        const supabase = createClient();
         
-        const { data, error } = await supabase
+        // Get current authenticated user
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          throw new Error('User not authenticated');
+        }
+        
+        // Check user's donations
+        const { data: donations, error: donationsError } = await supabase
+          .from('donations')
+          .select('donor_id, school_id')
+          .eq('donor_id', user.id);
+        
+
+console.log("donations:", donations);
+console.log("donationsError:", donationsError);
+
+        if (donationsError) {
+          throw donationsError;
+        }
+        
+        // If no donations found, show donation message
+        if (!donations || donations.length === 0) {
+          setShowDonationMessage(true);
+          setImages([]);
+          return;
+        }
+        
+        // Check if user has donated to all schools (null present)
+        const hasNullSchool = donations.some((donation: Donation) => donation.school_id === null);
+        
+        let storiesQuery = supabase
           .from('stories')
           .select('created_at, school_id, poster_url')
           .order('created_at', { ascending: false });
         
-        if (error) {
-          throw error;
+        if (!hasNullSchool) {
+          // Filter stories to only schools the user has donated to
+          const donatedSchoolIds = donations
+            .map((donation: Donation) => donation.school_id)
+            .filter((id): id is number => id !== null); // Remove nulls and assert type
+          
+          if (donatedSchoolIds.length > 0) {
+            storiesQuery = storiesQuery.in('school_id', donatedSchoolIds);
+          } else {
+            // No valid school IDs, show empty
+            setImages([]);
+            return;
+          }
+        }
+        // If hasNullSchool is true, we show all stories (no additional filter)
+        
+        const { data: stories, error: storiesError } = await storiesQuery;
+        
+        if (storiesError) {
+          throw storiesError;
         }
         
-        setImages(data || []);
+        setImages(stories || []);
+        
       } catch (err) {
         setError('Failed to load images');
         console.error('Error fetching images:', err);
@@ -58,16 +117,13 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
     fetchImages();
   }, []);
 
-  const formatDate = (dateInput: string | number | Date): string => {
-    const date = new Date(dateInput);
-    if (Number.isNaN(date.getTime())) return 'Invalid date';
-
-    return new Intl.DateTimeFormat('en-HK', {
-      timeZone: 'Asia/Hong_Kong',
+  const formatDate = (dateString: string | number | Date) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-HK', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric',
-    }).format(date);
+      day: 'numeric'
+    });
   };
 
   const openModal = (image: StoryImage, index: number): void => {
@@ -133,16 +189,33 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Gallery</h1>
-          <p className="text-gray-600 mt-2">{images.length} posters available</p>
+          <h1 className="text-3xl font-bold text-gray-900">Stories</h1>
+          <p className="text-gray-600 mt-2">{images.length} Stories Updates</p>
         </div>
       </div>
 
       {/* Gallery Carousel */}
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {images.length === 0 ? (
+        {showDonationMessage ? (
           <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No images found in the gallery.</p>
+            <div className="bg-white rounded-lg shadow-lg p-8 max-w-md mx-auto">
+              <div className="mb-4">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Calendar size={32} className="text-blue-600" />
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Start Your Journey
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Make your first donation to unlock and view inspiring stories from the schools and communities you support.
+              </p>
+              <DonationButton size="lg" />
+            </div>
+          </div>
+        ) : images.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">No stories available from your donated schools.</p>
           </div>
         ) : (
           <div className="flex justify-center">
@@ -171,7 +244,7 @@ const PosterGallery: React.FC<PosterGalleryProps> = () => {
                               <div className="w-full bg-white bg-opacity-95 backdrop-blur-sm p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                                 <div className="flex items-center text-gray-700 text-sm">
                                   <Calendar size={16} className="mr-2" />
-                                  <span>Published at {formatDate(image.created_at)}</span>
+                                  <span>{formatDate(image.created_at)}</span>
                                 </div>
                               </div>
                             </div>
