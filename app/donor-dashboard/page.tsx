@@ -244,7 +244,7 @@ console.log("donationsError:", donationsError);
                               <div className="w-full bg-white bg-opacity-95 backdrop-blur-sm p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
                                 <div className="flex items-center text-gray-700 text-sm">
                                   <Calendar size={16} className="mr-2" />
-                                  <span>{formatDate(image.created_at)}</span>
+                                  <span>Published at {formatDate(image.created_at)}</span>
                                 </div>
                               </div>
                             </div>
