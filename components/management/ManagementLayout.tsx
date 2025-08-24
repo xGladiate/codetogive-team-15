@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Package, School } from "@/types/database";
 import PackageManagement from "@/components/packages/PackageManagement";
 import SchoolManagement from "@/components/schools/SchoolManagement";
+import StoryManagement from "@/components/stories/StoryManagement";
 
 interface Props {
   packages: Package[];
@@ -40,15 +41,6 @@ export default function ManagementLayout({ packages, schools }: Props) {
       </Button>
     );
   };
-
-  const StoryManagement = () => (
-    <div className="flex items-center justify-center h-64 text-gray-500">
-      <div className="text-center">
-        <h3 className="text-lg font-medium mb-2">Story Management</h3>
-        <p>Coming soon...</p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gray-50">
